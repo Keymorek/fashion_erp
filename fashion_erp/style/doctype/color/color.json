@@ -17,7 +17,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Color Name",
+   "label": "颜色名称",
    "reqd": 1,
    "search_index": 1,
    "unique": 1
@@ -27,7 +27,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Color Group",
+   "label": "颜色组",
    "options": "Color Group",
    "reqd": 1,
    "search_index": 1
@@ -38,13 +38,13 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Enabled",
+   "label": "启用",
    "search_index": 1
   },
   {
    "fieldname": "remark",
    "fieldtype": "Small Text",
-   "label": "Remark"
+   "label": "备注"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -69,6 +69,7 @@
  "quick_entry": 1,
  "search_fields": "color_name,color_group",
  "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
  "sort_field": "color_name",
  "sort_order": "ASC",
  "title_field": "color_name",

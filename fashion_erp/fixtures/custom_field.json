@@ -6,10 +6,22 @@
     "fieldname": "brand_abbr",
     "fieldtype": "Data",
     "insert_after": "brand",
-    "label": "Brand Abbr",
+    "label": "品牌简称",
     "length": 8,
     "search_index": 1,
     "unique": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Supplier",
+    "name": "Supplier-supplier_role",
+    "fieldname": "supplier_role",
+    "fieldtype": "Select",
+    "insert_after": "supplier_name",
+    "label": "供应商角色",
+    "options": "外包工厂\n面料供应商\n辅料供应商\n包装耗材供应商\n综合供应商",
+    "default": "综合供应商",
+    "search_index": 1
   },
   {
     "doctype": "Custom Field",
@@ -18,7 +30,7 @@
     "fieldname": "fashion_erp_section",
     "fieldtype": "Section Break",
     "insert_after": "item_name",
-    "label": "Fashion ERP"
+    "label": "时尚企业管理"
   },
   {
     "doctype": "Custom Field",
@@ -27,7 +39,7 @@
     "fieldname": "style",
     "fieldtype": "Link",
     "insert_after": "fashion_erp_section",
-    "label": "Style",
+    "label": "款号",
     "options": "Style",
     "search_index": 1
   },
@@ -38,7 +50,7 @@
     "fieldname": "style_code",
     "fieldtype": "Data",
     "insert_after": "style",
-    "label": "Style Code",
+    "label": "款号编码",
     "search_index": 1
   },
   {
@@ -48,7 +60,7 @@
     "fieldname": "size_system",
     "fieldtype": "Link",
     "insert_after": "style_code",
-    "label": "Size System",
+    "label": "尺码体系",
     "options": "Size System",
     "search_index": 1
   },
@@ -59,7 +71,7 @@
     "fieldname": "color_code",
     "fieldtype": "Data",
     "insert_after": "size_system",
-    "label": "Color Code",
+    "label": "颜色编码",
     "search_index": 1
   },
   {
@@ -69,7 +81,7 @@
     "fieldname": "color_name",
     "fieldtype": "Data",
     "insert_after": "color_code",
-    "label": "Color Name",
+    "label": "颜色名称",
     "search_index": 1
   },
   {
@@ -79,7 +91,7 @@
     "fieldname": "size_code",
     "fieldtype": "Data",
     "insert_after": "color_name",
-    "label": "Size Code",
+    "label": "尺码编码",
     "search_index": 1
   },
   {
@@ -89,7 +101,7 @@
     "fieldname": "size_name",
     "fieldtype": "Data",
     "insert_after": "size_code",
-    "label": "Size Name"
+    "label": "尺码名称"
   },
   {
     "doctype": "Custom Field",
@@ -98,7 +110,7 @@
     "fieldname": "safe_stock",
     "fieldtype": "Float",
     "insert_after": "size_name",
-    "label": "Safe Stock",
+    "label": "安全库存",
     "default": "0"
   },
   {
@@ -106,9 +118,11 @@
     "dt": "Item",
     "name": "Item-default_location",
     "fieldname": "default_location",
-    "fieldtype": "Data",
+    "fieldtype": "Link",
     "insert_after": "safe_stock",
-    "label": "Default Location"
+    "label": "默认库位",
+    "options": "Warehouse Location",
+    "search_index": 1
   },
   {
     "doctype": "Custom Field",
@@ -117,7 +131,7 @@
     "fieldname": "sellable",
     "fieldtype": "Check",
     "insert_after": "default_location",
-    "label": "Sellable",
+    "label": "是否可售",
     "default": "1",
     "search_index": 1
   },
@@ -128,7 +142,7 @@
     "fieldname": "sku_status",
     "fieldtype": "Select",
     "insert_after": "sellable",
-    "label": "SKU Status",
+    "label": "单品状态",
     "options": "正常\n停产\n停售\n冻结",
     "default": "正常",
     "search_index": 1
@@ -140,7 +154,218 @@
     "fieldname": "remark",
     "fieldtype": "Small Text",
     "insert_after": "sku_status",
-    "label": "Remark"
+    "label": "备注"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Item",
+    "name": "Item-supply_section",
+    "fieldname": "supply_section",
+    "fieldtype": "Section Break",
+    "insert_after": "remark",
+    "label": "原辅料与耗材"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Item",
+    "name": "Item-item_usage_type",
+    "fieldname": "item_usage_type",
+    "fieldtype": "Select",
+    "insert_after": "supply_section",
+    "label": "物料用途",
+    "options": "成品\n面料\n辅料\n包装耗材\n其他",
+    "default": "成品",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Item",
+    "name": "Item-supply_mode",
+    "fieldname": "supply_mode",
+    "fieldtype": "Select",
+    "insert_after": "item_usage_type",
+    "label": "供给方式",
+    "options": "不适用\n自供\n外协自供",
+    "default": "不适用",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Item",
+    "name": "Item-supply_warehouse",
+    "fieldname": "supply_warehouse",
+    "fieldtype": "Link",
+    "insert_after": "supply_mode",
+    "label": "默认供给仓库",
+    "options": "Warehouse",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Item",
+    "name": "Item-is_fulfillment_consumable",
+    "fieldname": "is_fulfillment_consumable",
+    "fieldtype": "Check",
+    "insert_after": "supply_warehouse",
+    "label": "是否履约耗材",
+    "default": "0",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Item",
+    "name": "Item-procurement_lead_days",
+    "fieldname": "procurement_lead_days",
+    "fieldtype": "Int",
+    "insert_after": "is_fulfillment_consumable",
+    "label": "采购提前期(天)",
+    "default": "0"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Item",
+    "name": "Item-supply_status",
+    "fieldname": "supply_status",
+    "fieldtype": "Select",
+    "insert_after": "procurement_lead_days",
+    "label": "供给状态",
+    "options": "未启用\n备货中\n在用\n停用",
+    "default": "在用",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Order",
+    "name": "Purchase Order-fashion_erp_supply_section",
+    "fieldname": "fashion_erp_supply_section",
+    "fieldtype": "Section Break",
+    "insert_after": "supplier",
+    "label": "原辅料与耗材采购"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Order",
+    "name": "Purchase Order-supply_order_type",
+    "fieldname": "supply_order_type",
+    "fieldtype": "Select",
+    "insert_after": "fashion_erp_supply_section",
+    "label": "采购用途",
+    "options": "原辅料采购\n包装耗材采购\n综合采购",
+    "default": "原辅料采购",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Order Item",
+    "name": "Purchase Order Item-item_usage_type",
+    "fieldname": "item_usage_type",
+    "fieldtype": "Select",
+    "insert_after": "item_code",
+    "label": "物料用途",
+    "options": "成品\n面料\n辅料\n包装耗材\n其他",
+    "read_only": 1,
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Order Item",
+    "name": "Purchase Order Item-reference_style",
+    "fieldname": "reference_style",
+    "fieldtype": "Link",
+    "insert_after": "item_usage_type",
+    "label": "关联款号",
+    "options": "Style",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Order Item",
+    "name": "Purchase Order Item-reference_sample_ticket",
+    "fieldname": "reference_sample_ticket",
+    "fieldtype": "Link",
+    "insert_after": "reference_style",
+    "label": "关联打样单",
+    "options": "Sample Ticket",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Order Item",
+    "name": "Purchase Order Item-supply_context",
+    "fieldname": "supply_context",
+    "fieldtype": "Select",
+    "insert_after": "reference_sample_ticket",
+    "label": "采购场景",
+    "options": "常备采购\n打样采购\n外包备货\n包装履约",
+    "default": "常备采购",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Receipt",
+    "name": "Purchase Receipt-fashion_erp_supply_section",
+    "fieldname": "fashion_erp_supply_section",
+    "fieldtype": "Section Break",
+    "insert_after": "supplier",
+    "label": "原辅料与耗材收货"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Receipt",
+    "name": "Purchase Receipt-supply_receipt_type",
+    "fieldname": "supply_receipt_type",
+    "fieldtype": "Select",
+    "insert_after": "fashion_erp_supply_section",
+    "label": "收货用途",
+    "options": "原辅料收货\n包装耗材收货\n综合收货",
+    "default": "原辅料收货",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Receipt Item",
+    "name": "Purchase Receipt Item-item_usage_type",
+    "fieldname": "item_usage_type",
+    "fieldtype": "Select",
+    "insert_after": "item_code",
+    "label": "物料用途",
+    "options": "成品\n面料\n辅料\n包装耗材\n其他",
+    "read_only": 1,
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Receipt Item",
+    "name": "Purchase Receipt Item-reference_style",
+    "fieldname": "reference_style",
+    "fieldtype": "Link",
+    "insert_after": "item_usage_type",
+    "label": "关联款号",
+    "options": "Style",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Receipt Item",
+    "name": "Purchase Receipt Item-reference_sample_ticket",
+    "fieldname": "reference_sample_ticket",
+    "fieldtype": "Link",
+    "insert_after": "reference_style",
+    "label": "关联打样单",
+    "options": "Sample Ticket",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Purchase Receipt Item",
+    "name": "Purchase Receipt Item-supply_context",
+    "fieldname": "supply_context",
+    "fieldtype": "Select",
+    "insert_after": "reference_sample_ticket",
+    "label": "收货场景",
+    "options": "常备采购\n打样采购\n外包备货\n包装履约",
+    "default": "常备采购",
+    "search_index": 1
   },
   {
     "doctype": "Custom Field",
@@ -149,7 +374,7 @@
     "fieldname": "fashion_erp_channel_section",
     "fieldtype": "Section Break",
     "insert_after": "order_type",
-    "label": "Fashion ERP Channel"
+    "label": "时尚企业管理渠道"
   },
   {
     "doctype": "Custom Field",
@@ -158,7 +383,7 @@
     "fieldname": "channel",
     "fieldtype": "Data",
     "insert_after": "fashion_erp_channel_section",
-    "label": "Channel",
+    "label": "渠道",
     "search_index": 1
   },
   {
@@ -168,30 +393,41 @@
     "fieldname": "channel_store",
     "fieldtype": "Link",
     "insert_after": "channel",
-    "label": "Channel Store",
+    "label": "渠道店铺",
     "options": "Channel Store",
     "search_index": 1
   },
-  {
-    "doctype": "Custom Field",
-    "dt": "Sales Order",
-    "name": "Sales Order-external_order_id",
-    "fieldname": "external_order_id",
-    "fieldtype": "Data",
-    "insert_after": "channel_store",
-    "label": "External Order ID",
-    "search_index": 1
-  },
-  {
-    "doctype": "Custom Field",
-    "dt": "Sales Order",
-    "name": "Sales Order-biz_type",
-    "fieldname": "biz_type",
-    "fieldtype": "Select",
-    "insert_after": "external_order_id",
-    "label": "Biz Type",
-    "options": "Retail\nWholesale\nPresale\nExchange",
-    "default": "Retail"
+    {
+      "doctype": "Custom Field",
+      "dt": "Sales Order",
+      "name": "Sales Order-external_order_id",
+      "fieldname": "external_order_id",
+      "fieldtype": "Data",
+      "insert_after": "channel_store",
+      "label": "外部订单号",
+      "search_index": 1
+    },
+    {
+      "doctype": "Custom Field",
+      "dt": "Sales Order",
+      "name": "Sales Order-after_sales_ticket",
+      "fieldname": "after_sales_ticket",
+      "fieldtype": "Link",
+      "insert_after": "external_order_id",
+      "label": "售后工单",
+      "options": "After Sales Ticket",
+      "search_index": 1
+    },
+    {
+      "doctype": "Custom Field",
+      "dt": "Sales Order",
+      "name": "Sales Order-biz_type",
+      "fieldname": "biz_type",
+      "fieldtype": "Select",
+      "insert_after": "after_sales_ticket",
+    "label": "业务类型",
+    "options": "零售\n批发\n预售\n换货",
+    "default": "零售"
   },
   {
     "doctype": "Custom Field",
@@ -200,7 +436,7 @@
     "fieldname": "style",
     "fieldtype": "Link",
     "insert_after": "item_code",
-    "label": "Style",
+    "label": "款号",
     "options": "Style",
     "search_index": 1
   },
@@ -211,7 +447,7 @@
     "fieldname": "color_code",
     "fieldtype": "Data",
     "insert_after": "style",
-    "label": "Color Code",
+    "label": "颜色编码",
     "search_index": 1
   },
   {
@@ -221,7 +457,7 @@
     "fieldname": "color_name",
     "fieldtype": "Data",
     "insert_after": "color_code",
-    "label": "Color Name"
+    "label": "颜色名称"
   },
   {
     "doctype": "Custom Field",
@@ -230,7 +466,7 @@
     "fieldname": "size_code",
     "fieldtype": "Data",
     "insert_after": "color_name",
-    "label": "Size Code",
+    "label": "尺码编码",
     "search_index": 1
   },
   {
@@ -240,7 +476,7 @@
     "fieldname": "size_name",
     "fieldtype": "Data",
     "insert_after": "size_code",
-    "label": "Size Name"
+    "label": "尺码名称"
   },
   {
     "doctype": "Custom Field",
@@ -249,7 +485,7 @@
     "fieldname": "platform_sku",
     "fieldtype": "Data",
     "insert_after": "size_name",
-    "label": "Platform SKU"
+    "label": "平台商品编码"
   },
   {
     "doctype": "Custom Field",
@@ -258,17 +494,28 @@
     "fieldname": "is_presale",
     "fieldtype": "Check",
     "insert_after": "platform_sku",
-    "label": "Is Presale",
+    "label": "是否预售",
     "default": "0"
   },
-  {
-    "doctype": "Custom Field",
-    "dt": "Stock Entry Detail",
-    "name": "Stock Entry Detail-style",
-    "fieldname": "style",
-    "fieldtype": "Link",
+    {
+      "doctype": "Custom Field",
+      "dt": "Stock Entry",
+      "name": "Stock Entry-after_sales_ticket",
+      "fieldname": "after_sales_ticket",
+      "fieldtype": "Link",
+      "insert_after": "purpose",
+      "label": "售后工单",
+      "options": "After Sales Ticket",
+      "search_index": 1
+    },
+    {
+      "doctype": "Custom Field",
+      "dt": "Stock Entry Detail",
+      "name": "Stock Entry Detail-style",
+      "fieldname": "style",
+      "fieldtype": "Link",
     "insert_after": "item_code",
-    "label": "Style",
+    "label": "款号",
     "options": "Style",
     "search_index": 1
   },
@@ -279,7 +526,7 @@
     "fieldname": "color_code",
     "fieldtype": "Data",
     "insert_after": "style",
-    "label": "Color Code",
+    "label": "颜色编码",
     "search_index": 1
   },
   {
@@ -289,7 +536,7 @@
     "fieldname": "size_code",
     "fieldtype": "Data",
     "insert_after": "color_code",
-    "label": "Size Code",
+    "label": "尺码编码",
     "search_index": 1
   },
   {
@@ -299,8 +546,52 @@
     "fieldname": "production_ticket",
     "fieldtype": "Link",
     "insert_after": "size_code",
-    "label": "Production Ticket",
+    "label": "生产跟踪单",
     "options": "Production Ticket",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Stock Entry Detail",
+    "name": "Stock Entry Detail-inventory_status_from",
+    "fieldname": "inventory_status_from",
+    "fieldtype": "Link",
+    "insert_after": "production_ticket",
+    "label": "原库存状态",
+    "options": "Inventory Status",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Stock Entry Detail",
+    "name": "Stock Entry Detail-inventory_status_to",
+    "fieldname": "inventory_status_to",
+    "fieldtype": "Link",
+    "insert_after": "inventory_status_from",
+    "label": "目标库存状态",
+    "options": "Inventory Status",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Stock Entry Detail",
+    "name": "Stock Entry Detail-return_reason",
+    "fieldname": "return_reason",
+    "fieldtype": "Link",
+    "insert_after": "inventory_status_to",
+    "label": "退货原因",
+    "options": "Return Reason",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Stock Entry Detail",
+    "name": "Stock Entry Detail-return_disposition",
+    "fieldname": "return_disposition",
+    "fieldtype": "Link",
+    "insert_after": "return_reason",
+    "label": "退货处理结果",
+    "options": "Return Disposition",
     "search_index": 1
   },
   {
@@ -310,16 +601,27 @@
     "fieldname": "fashion_erp_section",
     "fieldtype": "Section Break",
     "insert_after": "item_name",
-    "label": "Fashion ERP"
+    "label": "时尚企业管理"
   },
-  {
-    "doctype": "Custom Field",
-    "dt": "Work Order",
-    "name": "Work Order-style",
+    {
+      "doctype": "Custom Field",
+      "dt": "Stock Entry Detail",
+      "name": "Stock Entry Detail-after_sales_ticket",
+      "fieldname": "after_sales_ticket",
+      "fieldtype": "Link",
+      "insert_after": "return_disposition",
+      "label": "售后工单",
+      "options": "After Sales Ticket",
+      "search_index": 1
+    },
+    {
+      "doctype": "Custom Field",
+      "dt": "Work Order",
+      "name": "Work Order-style",
     "fieldname": "style",
     "fieldtype": "Link",
     "insert_after": "fashion_erp_section",
-    "label": "Style",
+    "label": "款号",
     "options": "Style",
     "search_index": 1
   },
@@ -330,8 +632,49 @@
     "fieldname": "production_ticket",
     "fieldtype": "Link",
     "insert_after": "style",
-    "label": "Production Ticket",
+    "label": "生产跟踪单",
     "options": "Production Ticket",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "BOM",
+    "name": "BOM-fashion_erp_section",
+    "fieldname": "fashion_erp_section",
+    "fieldtype": "Section Break",
+    "insert_after": "item",
+    "label": "时尚企业管理"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "BOM",
+    "name": "BOM-style",
+    "fieldname": "style",
+    "fieldtype": "Link",
+    "insert_after": "fashion_erp_section",
+    "label": "款号",
+    "options": "Style",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "BOM",
+    "name": "BOM-production_ticket",
+    "fieldname": "production_ticket",
+    "fieldtype": "Link",
+    "insert_after": "style",
+    "label": "生产跟踪单",
+    "options": "Production Ticket",
+    "search_index": 1
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "BOM",
+    "name": "BOM-color_code",
+    "fieldname": "color_code",
+    "fieldtype": "Data",
+    "insert_after": "production_ticket",
+    "label": "颜色编码",
     "search_index": 1
   },
   {
@@ -341,7 +684,7 @@
     "fieldname": "color_code",
     "fieldtype": "Data",
     "insert_after": "production_ticket",
-    "label": "Color Code",
+    "label": "颜色编码",
     "search_index": 1
   },
   {
@@ -351,6 +694,6 @@
     "fieldname": "size_range",
     "fieldtype": "Data",
     "insert_after": "color_code",
-    "label": "Size Range"
+    "label": "尺码范围"
   }
 ]

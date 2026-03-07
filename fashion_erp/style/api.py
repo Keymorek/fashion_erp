@@ -11,7 +11,7 @@ from fashion_erp.style.services.style_service import get_style_variant_generatio
 
 def _get_style(style_name: str):
     if not style_name:
-        frappe.throw(_("Style is required."))
+        frappe.throw(_("款号不能为空。"))
     return frappe.get_doc("Style", style_name)
 
 
@@ -22,14 +22,14 @@ def create_template_item(style_name: str) -> dict[str, object]:
         result = create_template_item_for_style(style_name)
         return {
             "ok": True,
-            "message": _("Template Item is linked: {0}.").format(frappe.bold(result["item_code"])),
+            "message": _("模板货品已关联：{0}。").format(frappe.bold(result["item_code"])),
             "result": result,
         }
 
     result = create_template_item_for_style(style_name)
     return {
         "ok": True,
-        "message": _("Template Item prepared: {0}.").format(frappe.bold(result["item_code"])),
+        "message": _("模板货品已准备完成：{0}。").format(frappe.bold(result["item_code"])),
         "result": result,
     }
 
@@ -41,16 +41,14 @@ def generate_variants(style_name: str) -> dict[str, object]:
     if issues:
         return {
             "ok": False,
-            "message": _("Style is not ready for SKU generation."),
+            "message": _("当前款号暂不满足单品编码生成条件。"),
             "issues": issues,
         }
 
     result = generate_variants_for_style(style_name)
     return {
         "ok": True,
-        "message": _(
-            "SKU generation completed. Created: {0}, Updated: {1}, Unchanged: {2}."
-        ).format(
+        "message": _("单品编码生成完成。新增：{0}，更新：{1}，未变更：{2}。").format(
             len(result["created"]),
             len(result["updated"]),
             len(result["skipped"]),
@@ -65,8 +63,8 @@ def get_style_matrix(style_name: str) -> dict[str, object]:
     if not style.colors:
         return {
             "ok": False,
-            "message": _("Style has no colors yet."),
-            "issues": [_("Add at least one Style Color row first.")],
+            "message": _("当前款号还没有配置颜色。"),
+            "issues": [_("请先新增至少一条款式颜色。")],
         }
 
     return {

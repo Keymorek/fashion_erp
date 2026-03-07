@@ -39,7 +39,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Style Code",
+   "label": "款号编码",
    "length": 40,
    "reqd": 1,
    "search_index": 1,
@@ -49,42 +49,44 @@
    "fieldname": "style_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Style Name",
+   "label": "款号名称",
    "reqd": 1,
    "search_index": 1
   },
   {
    "fieldname": "classification_section",
    "fieldtype": "Section Break",
-   "label": "Classification"
+   "label": "分类信息"
   },
   {
    "fieldname": "brand",
    "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "Brand",
+   "label": "品牌",
    "options": "Brand",
    "search_index": 1
   },
   {
    "fieldname": "category",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "Category",
+   "label": "款式大类",
+   "options": "Style Category",
    "reqd": 1,
    "search_index": 1
   },
   {
    "fieldname": "sub_category",
-   "fieldtype": "Data",
-   "label": "Sub Category",
+   "fieldtype": "Link",
+   "label": "款式小类",
+   "options": "Style Sub Category",
    "search_index": 1
   },
   {
    "fieldname": "item_group",
    "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "Item Group",
+   "label": "物料组",
    "options": "Item Group",
    "search_index": 1
   },
@@ -92,8 +94,8 @@
    "fieldname": "season",
    "fieldtype": "Select",
    "in_standard_filter": 1,
-   "label": "Season",
-   "options": "SS\nAW\nALL",
+   "label": "季节",
+   "options": "春夏\n秋冬\n全年",
    "reqd": 1,
    "search_index": 1
   },
@@ -101,38 +103,38 @@
    "fieldname": "year",
    "fieldtype": "Int",
    "in_standard_filter": 1,
-   "label": "Year",
+   "label": "年份",
    "reqd": 1,
    "search_index": 1
   },
   {
    "fieldname": "wave",
    "fieldtype": "Data",
-   "label": "Wave"
+   "label": "波段"
   },
   {
-   "default": "Women",
+   "default": "女装",
    "fieldname": "gender",
    "fieldtype": "Select",
-   "label": "Gender",
-   "options": "Women\nUnisex\nKids"
+   "label": "性别定位",
+   "options": "女装\n中性\n童装"
   },
   {
    "fieldname": "planning_section",
    "fieldtype": "Section Break",
-   "label": "Planning"
+   "label": "规划信息"
   },
   {
    "fieldname": "design_owner",
    "fieldtype": "Data",
-   "label": "Design Owner",
+   "label": "设计负责人",
    "search_index": 1
   },
   {
    "fieldname": "size_system",
    "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "Size System",
+   "label": "尺码体系",
    "options": "Size System",
    "reqd": 1,
    "search_index": 1
@@ -140,78 +142,78 @@
   {
    "fieldname": "item_template",
    "fieldtype": "Link",
-   "label": "Item Template",
+   "label": "模板货品",
    "options": "Item",
    "search_index": 1
   },
   {
    "fieldname": "fabric_main",
    "fieldtype": "Data",
-   "label": "Main Fabric"
+   "label": "主面料"
   },
   {
    "fieldname": "fabric_lining",
    "fieldtype": "Data",
-   "label": "Lining Fabric"
+   "label": "里料"
   },
   {
    "default": "0",
    "fieldname": "target_cost",
    "fieldtype": "Currency",
-   "label": "Target Cost"
+   "label": "目标成本"
   },
   {
    "default": "0",
    "fieldname": "tag_price",
    "fieldtype": "Currency",
-   "label": "Tag Price"
+   "label": "吊牌价"
   },
   {
    "fieldname": "status_section",
    "fieldtype": "Section Break",
-   "label": "Status"
+   "label": "状态信息"
   },
   {
-   "default": "Draft",
+   "default": "草稿",
    "fieldname": "launch_status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Launch Status",
-   "options": "Draft\nSampling\nApproved\nReady\nLaunched\nArchived",
+   "label": "上市状态",
+   "options": "草稿\n打样中\n已核准\n待上市\n已上市\n已归档",
    "reqd": 1,
    "search_index": 1
   },
   {
-   "default": "Not Ready",
+   "default": "未开售",
    "fieldname": "sales_status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Sales Status",
-   "options": "Not Ready\nOn Sale\nStop Sale\nClearance\nDiscontinued",
+   "label": "销售状态",
+   "options": "未开售\n在售\n停售\n清仓\n已停产",
    "reqd": 1,
    "search_index": 1
   },
   {
    "fieldname": "cover_image",
    "fieldtype": "Attach Image",
-   "label": "Cover Image"
+   "label": "主图"
   },
   {
    "fieldname": "description",
    "fieldtype": "Small Text",
-   "label": "Description"
+   "label": "说明"
   },
   {
    "fieldname": "colors_section",
    "fieldtype": "Section Break",
-   "label": "Style Colors"
+   "label": "款式颜色"
   },
   {
    "fieldname": "colors",
    "fieldtype": "Table",
-   "label": "Colors",
+   "label": "颜色明细",
    "options": "Style Color",
    "reqd": 1
   }

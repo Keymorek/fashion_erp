@@ -11,7 +11,7 @@ from fashion_erp.style.services.style_service import (
 def get_brand_sku_prefix(style_doc) -> str:
     brand_prefix = get_brand_abbreviation(style_doc.brand, raise_on_missing_meta=True)
     if not brand_prefix:
-        frappe.throw(_("Brand Abbr is required before generating SKU Items."))
+        frappe.throw(_("生成单品编码前必须先维护品牌简称。"))
     return brand_prefix
 
 
@@ -27,7 +27,7 @@ def create_template_item_for_style(style_name: str) -> dict[str, object]:
     style = frappe.get_doc("Style", style_name)
 
     if not style.item_group:
-        frappe.throw(_("Item Group is required before creating a Template Item."))
+        frappe.throw(_("创建模板货品前必须先选择物料组。"))
 
     template_code = build_template_item_code(style)
     template_name = _build_template_item_name(style.style_name)
@@ -177,7 +177,7 @@ def build_style_matrix(style_name: str) -> dict[str, object]:
             "total_count": existing_count + missing_count,
         },
         "brand_prefix": matrix_brand_prefix,
-        "message": _("Style Matrix loaded."),
+        "message": _("款色码矩阵加载完成。"),
     }
 
 
@@ -261,7 +261,7 @@ def _build_item_name(style_name: str, color_name: str, size_name: str) -> str:
 
 
 def _build_template_item_name(style_name: str) -> str:
-    item_name = f"{style_name} / Template"
+    item_name = f"{style_name} / 模板货品"
     return item_name[:140]
 
 

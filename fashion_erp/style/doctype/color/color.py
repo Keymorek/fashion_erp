@@ -17,4 +17,4 @@ class Color(Document):
         ensure_link_exists("Color Group", self.color_group)
 
         if not self.color_name:
-            frappe.throw(_("Color Name is required."))
+            frappe.throw(_("颜色名称不能为空。"))

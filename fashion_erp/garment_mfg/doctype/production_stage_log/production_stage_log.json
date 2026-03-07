@@ -19,8 +19,8 @@
    "fieldname": "stage",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Stage",
-   "options": "Planned\nCutting\nStitching\nFinishing\nPacking\nDone",
+   "label": "阶段",
+   "options": "计划\n裁剪\n车缝\n后整\n包装\n完成",
    "reqd": 1
   },
   {
@@ -28,32 +28,32 @@
    "fieldname": "qty_in",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Qty In"
+   "label": "投入数量"
   },
   {
    "default": "0",
    "fieldname": "qty_out",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Qty Out"
+   "label": "产出数量"
   },
   {
    "default": "0",
    "fieldname": "defect_qty",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Defect Qty"
+   "label": "不良数量"
   },
   {
    "fieldname": "warehouse",
    "fieldtype": "Link",
-   "label": "Warehouse",
+   "label": "仓库",
    "options": "Warehouse"
   },
   {
    "fieldname": "supplier",
    "fieldtype": "Link",
-   "label": "Supplier",
+   "label": "供应商",
    "options": "Supplier"
   },
   {
@@ -61,13 +61,13 @@
    "fieldname": "log_time",
    "fieldtype": "Datetime",
    "in_list_view": 1,
-   "label": "Log Time",
+   "label": "记录时间",
    "reqd": 1
   },
   {
    "fieldname": "remark",
    "fieldtype": "Small Text",
-   "label": "Remark"
+   "label": "备注"
   }
  ],
  "istable": 1,

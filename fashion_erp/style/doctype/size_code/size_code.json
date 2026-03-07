@@ -18,7 +18,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Size System",
+   "label": "尺码体系",
    "options": "Size System",
    "reqd": 1,
    "search_index": 1
@@ -28,7 +28,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Size Code",
+   "label": "尺码编码",
    "length": 16,
    "reqd": 1,
    "search_index": 1
@@ -37,7 +37,7 @@
    "fieldname": "size_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Size Name",
+   "label": "尺码名称",
    "reqd": 1,
    "search_index": 1
   },
@@ -46,7 +46,7 @@
    "fieldname": "sort_order",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Sort Order",
+   "label": "排序",
    "reqd": 1,
    "search_index": 1
   },
@@ -56,7 +56,7 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Enabled"
+   "label": "启用"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -81,6 +81,7 @@
  "quick_entry": 1,
  "search_fields": "size_system,size_code,size_name",
  "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
  "sort_field": "sort_order",
  "sort_order": "ASC",
  "title_field": "size_name",

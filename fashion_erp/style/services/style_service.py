@@ -6,10 +6,65 @@ from frappe.utils import cint, flt, nowdate
 
 
 BUSINESS_CODE_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9_-]*$")
-SEASON_OPTIONS = ("SS", "AW", "ALL")
-GENDER_OPTIONS = ("Women", "Unisex", "Kids")
-LAUNCH_STATUS_OPTIONS = ("Draft", "Sampling", "Approved", "Ready", "Launched", "Archived")
-SALES_STATUS_OPTIONS = ("Not Ready", "On Sale", "Stop Sale", "Clearance", "Discontinued")
+SEASON_OPTIONS = ("春夏", "秋冬", "全年")
+SEASON_ALIASES = {"SS": "春夏", "AW": "秋冬", "ALL": "全年"}
+GENDER_OPTIONS = ("女装", "中性", "童装")
+GENDER_ALIASES = {"Women": "女装", "Unisex": "中性", "Kids": "童装"}
+LAUNCH_STATUS_OPTIONS = ("草稿", "打样中", "已核准", "待上市", "已上市", "已归档")
+LAUNCH_STATUS_ALIASES = {
+    "Draft": "草稿",
+    "Sampling": "打样中",
+    "Approved": "已核准",
+    "Ready": "待上市",
+    "Launched": "已上市",
+    "Archived": "已归档",
+}
+SALES_STATUS_OPTIONS = ("未开售", "在售", "停售", "清仓", "已停产")
+SALES_STATUS_ALIASES = {
+    "Not Ready": "未开售",
+    "On Sale": "在售",
+    "Stop Sale": "停售",
+    "Clearance": "清仓",
+    "Discontinued": "已停产",
+}
+DOCTYPE_LABELS = {
+    "After Sales Ticket": "售后工单",
+    "BOM": "物料清单",
+    "Brand": "品牌",
+    "Channel Store": "渠道店铺",
+    "Color": "颜色",
+    "Color Group": "颜色组",
+    "Company": "公司",
+    "Customer": "客户",
+    "Delivery Note": "发货单",
+    "Delivery Note Item": "发货单明细",
+    "Inventory Status": "库存状态",
+    "Item": "物料",
+    "Item Group": "物料组",
+    "Price List": "价格表",
+    "Purchase Invoice": "采购发票",
+    "Purchase Order": "采购订单",
+    "Purchase Receipt": "采购收货",
+    "Production Ticket": "生产跟踪单",
+    "Return Disposition": "退货处理结果",
+    "Return Reason": "退货原因",
+    "Sales Invoice": "销售发票",
+    "Sales Order": "销售订单",
+    "Sales Order Item": "销售订单明细",
+    "Sample Ticket": "打样单",
+    "Sample Ticket Log": "打样日志",
+    "Size Code": "尺码编码",
+    "Size System": "尺码体系",
+    "Style": "款号",
+    "Style Category": "款式大类",
+    "Style Sub Category": "款式小类",
+    "Supplier": "供应商",
+    "User": "用户",
+    "Warehouse": "仓库",
+    "Warehouse Location": "仓库库位",
+    "Warehouse Zone": "仓区",
+    "Work Order": "生产工单",
+}
 
 COLOR_GROUP_SEEDS = [
     {"color_group_code": "WHT", "color_group_name": "白色系", "sort_order": 10, "enabled": 1},
@@ -121,8 +176,8 @@ SIZE_CODE_SEEDS = [
     {"size_system": "BOTTOM", "size_code": "30", "size_name": "30", "sort_order": 70, "enabled": 1},
     {"size_system": "BOTTOM", "size_code": "31", "size_name": "31", "sort_order": 80, "enabled": 1},
     {"size_system": "BOTTOM", "size_code": "32", "size_name": "32", "sort_order": 90, "enabled": 1},
-    {"size_system": "FREE", "size_code": "ONE", "size_name": "One Size", "sort_order": 10, "enabled": 1},
-    {"size_system": "ACC", "size_code": "ONE", "size_name": "One Size", "sort_order": 10, "enabled": 1},
+    {"size_system": "FREE", "size_code": "ONE", "size_name": "均码", "sort_order": 10, "enabled": 1},
+    {"size_system": "ACC", "size_code": "ONE", "size_name": "均码", "sort_order": 10, "enabled": 1},
 ]
 
 
@@ -134,7 +189,7 @@ def normalize_business_code(value: str | None, field_label: str) -> str:
     code = normalize_text(value).upper()
     if code and not BUSINESS_CODE_PATTERN.fullmatch(code):
         frappe.throw(
-            _("{0} must contain only uppercase letters, numbers, hyphen, or underscore.").format(
+            _("{0}只能包含大写字母、数字、中划线或下划线。").format(
                 field_label
             )
         )
@@ -150,14 +205,14 @@ def coerce_checkbox(value: object, default: int = 1) -> int:
 def coerce_non_negative_int(value: object, field_label: str, default: int = 0) -> int:
     number = cint(value if value not in (None, "") else default)
     if number < 0:
-        frappe.throw(_("{0} cannot be negative.").format(field_label))
+        frappe.throw(_("{0}不能为负数。").format(field_label))
     return number
 
 
 def coerce_non_negative_float(value: object, field_label: str, default: float = 0) -> float:
     number = flt(value if value not in (None, "") else default)
     if number < 0:
-        frappe.throw(_("{0} cannot be negative.").format(field_label))
+        frappe.throw(_("{0}不能为负数。").format(field_label))
     return number
 
 
@@ -168,22 +223,31 @@ def normalize_select(
     *,
     default: str | None = None,
     uppercase: bool = False,
+    alias_map: dict[str, str] | None = None,
 ) -> str:
     normalized = normalize_text(value) or normalize_text(default)
+    if alias_map and normalized in alias_map:
+        normalized = alias_map[normalized]
     if uppercase:
         normalized = normalized.upper()
     if normalized and normalized not in allowed_values:
         frappe.throw(
-            _("{0} must be one of: {1}.").format(field_label, ", ".join(allowed_values))
+            _("{0}必须是以下值之一：{1}。").format(field_label, "、".join(allowed_values))
         )
     return normalized
+
+
+def get_doctype_label(doctype: str) -> str:
+    return DOCTYPE_LABELS.get(doctype, doctype)
 
 
 def ensure_link_exists(doctype: str, name: str | None) -> None:
     if not name:
         return
     if not frappe.db.exists(doctype, name):
-        frappe.throw(_("{0} {1} does not exist.").format(doctype, frappe.bold(name)))
+        frappe.throw(
+            _("{0}{1}不存在。").format(get_doctype_label(doctype), frappe.bold(name))
+        )
 
 
 def is_enabled_doc(doctype: str, name: str | None, enabled_field: str = "enabled") -> bool:
@@ -198,7 +262,9 @@ def is_enabled_doc(doctype: str, name: str | None, enabled_field: str = "enabled
 def ensure_enabled_link(doctype: str, name: str | None, enabled_field: str = "enabled") -> None:
     ensure_link_exists(doctype, name)
     if name and not is_enabled_doc(doctype, name, enabled_field):
-        frappe.throw(_("{0} {1} is disabled.").format(doctype, frappe.bold(name)))
+        frappe.throw(
+            _("{0}{1}已停用。").format(get_doctype_label(doctype), frappe.bold(name))
+        )
 
 
 def get_current_year() -> int:
@@ -217,16 +283,16 @@ def get_brand_abbreviation(brand_name: str | None, *, raise_on_missing_meta: boo
 
     if not has_brand_abbreviation_field():
         if raise_on_missing_meta:
-            frappe.throw(_("Brand Abbr field is missing on Brand. Apply Fashion ERP fixtures first."))
+            frappe.throw(_("品牌简称字段缺失，请先应用本应用的字段配置。"))
         return ""
 
     brand_abbr = frappe.db.get_value("Brand", brand_name, "brand_abbr")
-    return normalize_business_code(brand_abbr, "Brand Abbr")
+    return normalize_business_code(brand_abbr, "品牌简称")
 
 
 def get_color_metadata(color_name: str | None) -> dict[str, object]:
     if not color_name:
-        frappe.throw(_("Color is required."))
+        frappe.throw(_("颜色不能为空。"))
 
     color = frappe.db.get_value(
         "Color",
@@ -235,9 +301,9 @@ def get_color_metadata(color_name: str | None) -> dict[str, object]:
         as_dict=True,
     )
     if not color:
-        frappe.throw(_("Color {0} does not exist.").format(frappe.bold(color_name)))
+        frappe.throw(_("颜色{0}不存在。").format(frappe.bold(color_name)))
     if not cint(color.enabled):
-        frappe.throw(_("Color {0} is disabled.").format(frappe.bold(color_name)))
+        frappe.throw(_("颜色{0}已停用。").format(frappe.bold(color_name)))
 
     group = frappe.db.get_value(
         "Color Group",
@@ -247,12 +313,12 @@ def get_color_metadata(color_name: str | None) -> dict[str, object]:
     )
     if not group:
         frappe.throw(
-            _("Color Group {0} does not exist for Color {1}.").format(
+            _("颜色{1}关联的颜色组{0}不存在。").format(
                 frappe.bold(color.color_group), frappe.bold(color_name)
             )
         )
     if not cint(group.enabled):
-        frappe.throw(_("Color Group {0} is disabled.").format(frappe.bold(group.name)))
+        frappe.throw(_("颜色组{0}已停用。").format(frappe.bold(group.name)))
 
     return {
         "color": color.name,
@@ -267,7 +333,7 @@ def sync_style_color_row(row, default_sort_order: int = 0) -> None:
     row.color = color_data["color"]
     row.color_name = color_data["color_name"]
     row.color_code = color_data["color_code"]
-    row.sort_order = coerce_non_negative_int(row.sort_order, "Style Color Sort Order", default_sort_order)
+    row.sort_order = coerce_non_negative_int(row.sort_order, "款式颜色排序", default_sort_order)
     row.enabled = coerce_checkbox(row.enabled)
 
 
@@ -282,38 +348,47 @@ def get_enabled_size_codes(size_system: str | None) -> list[str]:
     )
 
 
+def get_size_range_summary(size_system: str | None) -> str:
+    size_codes = get_enabled_size_codes(size_system)
+    if not size_codes:
+        return ""
+    if len(size_codes) == 1:
+        return size_codes[0]
+    return f"{size_codes[0]}-{size_codes[-1]}"
+
+
 def get_style_variant_generation_issues(style_doc) -> list[str]:
     issues = []
 
     if not style_doc.brand:
-        issues.append(_("Brand is required before generating SKU Items."))
+        issues.append(_("生成单品编码前必须先选择品牌。"))
     else:
         if not has_brand_abbreviation_field():
-            issues.append(_("Brand Abbr field is missing on Brand. Apply Fashion ERP fixtures first."))
+            issues.append(_("品牌上缺少品牌简称字段，请先应用本应用的字段配置。"))
         elif not get_brand_abbreviation(style_doc.brand):
             issues.append(
-                _("Brand Abbr is required on Brand {0} before generating SKU Items.").format(
+                _("生成单品编码前，品牌{0}必须先维护品牌简称。").format(
                     frappe.bold(style_doc.brand)
                 )
             )
 
     if not style_doc.size_system:
-        issues.append(_("Size System is required."))
+        issues.append(_("尺码体系不能为空。"))
     elif not is_enabled_doc("Size System", style_doc.size_system):
-        issues.append(_("Size System {0} is disabled.").format(frappe.bold(style_doc.size_system)))
+        issues.append(_("尺码体系{0}已停用。").format(frappe.bold(style_doc.size_system)))
     elif not get_enabled_size_codes(style_doc.size_system):
         issues.append(
-            _("Size System {0} has no enabled Size Codes.").format(
+            _("尺码体系{0}下没有启用的尺码编码。").format(
                 frappe.bold(style_doc.size_system)
             )
         )
 
     if not style_doc.item_group:
-        issues.append(_("Item Group is required before generating SKU Items."))
+        issues.append(_("生成单品编码前必须先选择物料组。"))
 
     enabled_colors = [row for row in (style_doc.colors or []) if cint(row.enabled)]
     if not enabled_colors:
-        issues.append(_("At least one enabled Style Color is required."))
+        issues.append(_("至少需要一条启用的款式颜色。"))
 
     return issues
 

@@ -18,7 +18,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Color Group Code",
+   "label": "颜色组编码",
    "length": 8,
    "reqd": 1,
    "search_index": 1,
@@ -28,7 +28,7 @@
    "fieldname": "color_group_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Color Group Name",
+   "label": "颜色组名称",
    "reqd": 1,
    "search_index": 1
   },
@@ -37,7 +37,7 @@
    "fieldname": "sort_order",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Sort Order"
+   "label": "排序"
   },
   {
    "default": "1",
@@ -45,13 +45,13 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Enabled",
+   "label": "启用",
    "search_index": 1
   },
   {
    "fieldname": "remark",
    "fieldtype": "Small Text",
-   "label": "Remark"
+   "label": "备注"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -76,6 +76,7 @@
  "quick_entry": 1,
  "search_fields": "color_group_code,color_group_name",
  "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
  "sort_field": "sort_order",
  "sort_order": "ASC",
  "title_field": "color_group_name",

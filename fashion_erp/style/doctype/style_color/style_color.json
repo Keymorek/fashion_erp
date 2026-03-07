@@ -16,7 +16,7 @@
    "fieldname": "color",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Color",
+   "label": "颜色",
    "options": "Color",
    "reqd": 1
   },
@@ -24,7 +24,7 @@
    "fieldname": "color_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Color Name",
+   "label": "颜色名称",
    "read_only": 1,
    "reqd": 1
   },
@@ -32,7 +32,7 @@
    "fieldname": "color_code",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Color Code",
+   "label": "颜色编码",
    "read_only": 1,
    "reqd": 1
   },
@@ -41,14 +41,14 @@
    "fieldname": "sort_order",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Sort Order"
+   "label": "排序"
   },
   {
    "default": "1",
    "fieldname": "enabled",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Enabled",
+   "label": "启用",
    "reqd": 1
   }
  ],

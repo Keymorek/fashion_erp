@@ -15,13 +15,13 @@
  ],
  "fields": [
   {
-   "default": "Manual",
+   "default": "手工",
    "fieldname": "channel",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Channel",
-   "options": "Manual\nTikTok\nShopee\nShopify",
+   "label": "渠道",
+   "options": "手工\n抖音\n虾皮\n独立站",
    "reqd": 1,
    "search_index": 1
   },
@@ -30,7 +30,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Store Name",
+   "label": "店铺名称",
    "reqd": 1,
    "search_index": 1
   },
@@ -39,7 +39,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Warehouse",
+   "label": "仓库",
    "options": "Warehouse",
    "reqd": 1,
    "search_index": 1
@@ -47,24 +47,24 @@
   {
    "fieldname": "price_list",
    "fieldtype": "Link",
-   "label": "Price List",
+   "label": "价格表",
    "options": "Price List"
   },
   {
-   "default": "Draft",
+   "default": "草稿",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Draft\nActive\nDisabled",
+   "label": "状态",
+   "options": "草稿\n启用\n停用",
    "reqd": 1,
    "search_index": 1
   },
   {
    "fieldname": "api_config_ref",
    "fieldtype": "Data",
-   "label": "API Config Ref"
+   "label": "接口配置引用"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -89,6 +89,7 @@
  "quick_entry": 1,
  "search_fields": "channel,store_name",
  "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "title_field": "store_name",
