@@ -1,0 +1,244 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:style_code",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "style_code",
+  "style_name",
+  "classification_section",
+  "brand",
+  "category",
+  "sub_category",
+  "item_group",
+  "season",
+  "year",
+  "wave",
+  "gender",
+  "planning_section",
+  "design_owner",
+  "size_system",
+  "item_template",
+  "fabric_main",
+  "fabric_lining",
+  "target_cost",
+  "tag_price",
+  "status_section",
+  "launch_status",
+  "sales_status",
+  "cover_image",
+  "description",
+  "colors_section",
+  "colors"
+ ],
+ "fields": [
+  {
+   "fieldname": "style_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Style Code",
+   "length": 40,
+   "reqd": 1,
+   "search_index": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "style_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Style Name",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "classification_section",
+   "fieldtype": "Section Break",
+   "label": "Classification"
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Brand",
+   "options": "Brand",
+   "search_index": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Category",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "sub_category",
+   "fieldtype": "Data",
+   "label": "Sub Category",
+   "search_index": 1
+  },
+  {
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Item Group",
+   "options": "Item Group",
+   "search_index": 1
+  },
+  {
+   "fieldname": "season",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Season",
+   "options": "SS\nAW\nALL",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Int",
+   "in_standard_filter": 1,
+   "label": "Year",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "wave",
+   "fieldtype": "Data",
+   "label": "Wave"
+  },
+  {
+   "default": "Women",
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "Women\nUnisex\nKids"
+  },
+  {
+   "fieldname": "planning_section",
+   "fieldtype": "Section Break",
+   "label": "Planning"
+  },
+  {
+   "fieldname": "design_owner",
+   "fieldtype": "Data",
+   "label": "Design Owner",
+   "search_index": 1
+  },
+  {
+   "fieldname": "size_system",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Size System",
+   "options": "Size System",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "item_template",
+   "fieldtype": "Link",
+   "label": "Item Template",
+   "options": "Item",
+   "search_index": 1
+  },
+  {
+   "fieldname": "fabric_main",
+   "fieldtype": "Data",
+   "label": "Main Fabric"
+  },
+  {
+   "fieldname": "fabric_lining",
+   "fieldtype": "Data",
+   "label": "Lining Fabric"
+  },
+  {
+   "default": "0",
+   "fieldname": "target_cost",
+   "fieldtype": "Currency",
+   "label": "Target Cost"
+  },
+  {
+   "default": "0",
+   "fieldname": "tag_price",
+   "fieldtype": "Currency",
+   "label": "Tag Price"
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "launch_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Launch Status",
+   "options": "Draft\nSampling\nApproved\nReady\nLaunched\nArchived",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Not Ready",
+   "fieldname": "sales_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sales Status",
+   "options": "Not Ready\nOn Sale\nStop Sale\nClearance\nDiscontinued",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cover_image",
+   "fieldtype": "Attach Image",
+   "label": "Cover Image"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "colors_section",
+   "fieldtype": "Section Break",
+   "label": "Style Colors"
+  },
+  {
+   "fieldname": "colors",
+   "fieldtype": "Table",
+   "label": "Colors",
+   "options": "Style Color",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "Style",
+ "name": "Style",
+ "naming_rule": "By fieldname",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "style_code,style_name,category,sub_category",
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "style_name",
+ "track_changes": 1
+}
