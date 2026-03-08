@@ -732,9 +732,18 @@ def _get_stage_index(stage: str | None) -> int:
 def _build_ticket_size_range(doc) -> str:
     if not _link_exists_cached(doc, "Style", doc.style):
         return ""
-    size_system = normalize_text(
-        _get_cached_reference_row(doc, "style_rows", "Style", doc.style, ["size_system"]).get("size_system")
+    style_row = _get_cached_reference_row(
+        doc,
+        "style_rows",
+        "Style",
+        doc.style,
+        ["size_range_summary", "size_system"],
     )
+    size_range_summary = normalize_text(style_row.get("size_range_summary"))
+    if size_range_summary:
+        return size_range_summary
+
+    size_system = normalize_text(style_row.get("size_system"))
     return get_size_range_summary(size_system)
 
 

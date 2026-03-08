@@ -1,5 +1,5 @@
 {
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"时尚企业管理\",\"level\":3,\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"按业务流程找入口\",\"level\":4,\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"1. 商品开发\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"2. 供给与采购\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"3. 外包与到货\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"4. 订单与履约\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"5. 售后处理\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"6. 运营报表\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"7. 基础设置\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"8. 辅助生产\",\"col\":3}}]",
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"时尚企业管理\",\"level\":3,\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"按业务流程找入口\",\"level\":4,\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"1. 商品开发\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"2. 供给与采购\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"3. 外包与到货\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"4. 订单与履约\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"5. 售后处理\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"6. 运营报表\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"7. 财务与成本\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"8. 基础设置\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"9. 辅助生产\",\"col\":3}}]",
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
@@ -279,7 +279,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "7. 基础设置",
+   "label": "7. 财务与成本",
    "link_count": 0,
    "onboard": 0,
    "type": "Card Break"
@@ -288,9 +288,50 @@
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "款式大类",
+   "label": "外包预计成本分析",
    "link_count": 0,
-   "link_to": "Style Category",
+   "link_to": "Outsource Estimated Cost Analysis",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "采购成本分析",
+   "link_count": 0,
+   "link_to": "Material Procurement Cost Analysis",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "履约成本分析",
+   "link_count": 0,
+   "link_to": "Fulfillment Cost Analysis",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "8. 基础设置",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "类目模板",
+   "link_count": 0,
+   "link_to": "Style Category Template",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -299,9 +340,31 @@
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "款式小类",
+   "label": "季节档案",
    "link_count": 0,
-   "link_to": "Style Sub Category",
+   "link_to": "Style Season",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "年份档案",
+   "link_count": 0,
+   "link_to": "Style Year",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "面料档案",
+   "link_count": 0,
+   "link_to": "Fabric Master",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -408,7 +471,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "8. 辅助生产",
+   "label": "9. 辅助生产",
    "link_count": 0,
    "onboard": 0,
    "type": "Card Break"
@@ -421,6 +484,17 @@
    "link_count": 0,
    "link_to": "Production Ticket",
    "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "内部生产看板",
+   "link_count": 0,
+   "link_to": "Production Board",
+   "link_type": "Report",
    "onboard": 0,
    "type": "Link"
   },

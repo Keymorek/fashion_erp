@@ -11,8 +11,11 @@ frappe.ui.form.on("After Sales Ticket", {
 		}
 
 		if (["已收货", "质检中", "待处理", "待退款", "待补发"].includes(frm.doc.ticket_status)) {
+			frm.add_custom_button(__("直接提交库存"), () => {
+				openReturnStockEntryDialog(frm, { submitDirectly: true });
+			});
 			frm.add_custom_button(__("生成库存凭证"), () => {
-				openReturnStockEntryDialog(frm);
+				openReturnStockEntryDialog(frm, { submitDirectly: false });
 			});
 		}
 
@@ -51,8 +54,11 @@ frappe.ui.form.on("After Sales Ticket", {
 			["换货", "补发", "维修"].includes(frm.doc.ticket_type) &&
 			!frm.doc.replacement_sales_order
 		) {
-			frm.add_custom_button(__("创建补发订单"), () => {
-				openReplacementOrderDialog(frm);
+			frm.add_custom_button(__("直接创建补发单"), () => {
+				openReplacementOrderDialog(frm, { createDirectly: true });
+			});
+			frm.add_custom_button(__("生成补发草稿"), () => {
+				openReplacementOrderDialog(frm, { createDirectly: false });
 			});
 		}
 
@@ -419,9 +425,10 @@ function openRefundDialog(frm) {
 	dialog.show();
 }
 
-function openReplacementOrderDialog(frm) {
+function openReplacementOrderDialog(frm, options = {}) {
+	const createDirectly = Boolean(options.createDirectly);
 	const dialog = new frappe.ui.Dialog({
-		title: __("生成补发订单草稿"),
+		title: createDirectly ? __("直接创建补发订单") : __("生成补发订单草稿"),
 		fields: [
 			{
 				fieldname: "company",
@@ -449,9 +456,20 @@ function openReplacementOrderDialog(frm) {
 		]
 	});
 
-	dialog.set_primary_action(__("打开草稿"), () => {
+	dialog.set_primary_action(createDirectly ? __("直接创建") : __("打开草稿"), () => {
 		const values = dialog.get_values();
 		if (!values) {
+			return;
+		}
+
+		if (createDirectly) {
+			callTicketMethod(frm, "create_replacement_order", values).then((payload) => {
+				dialog.hide();
+				if (payload.sales_order) {
+					frappe.set_route("Form", "Sales Order", payload.sales_order);
+				}
+				return frm.reload_doc();
+			});
 			return;
 		}
 
@@ -464,12 +482,13 @@ function openReplacementOrderDialog(frm) {
 	dialog.show();
 }
 
-function openReturnStockEntryDialog(frm) {
+function openReturnStockEntryDialog(frm, options = {}) {
+	const submitDirectly = Boolean(options.submitDirectly);
 	const defaultMode = ["待退款", "待补发", "待处理"].includes(frm.doc.ticket_status)
 		? "最终处理"
 		: "待检入库";
 	const dialog = new frappe.ui.Dialog({
-		title: __("生成库存凭证草稿"),
+		title: submitDirectly ? __("直接提交库存凭证") : __("生成库存凭证草稿"),
 		fields: [
 			{
 				fieldname: "entry_mode",
@@ -514,9 +533,20 @@ function openReturnStockEntryDialog(frm) {
 		]
 	});
 
-	dialog.set_primary_action(__("打开草稿"), () => {
+	dialog.set_primary_action(submitDirectly ? __("直接提交") : __("打开草稿"), () => {
 		const values = dialog.get_values();
 		if (!values) {
+			return;
+		}
+
+		if (submitDirectly) {
+			callTicketMethod(frm, "submit_return_stock_entry", values).then((payload) => {
+				dialog.hide();
+				if (payload.stock_entry) {
+					frappe.set_route("Form", "Stock Entry", payload.stock_entry);
+				}
+				return frm.reload_doc();
+			});
 			return;
 		}
 

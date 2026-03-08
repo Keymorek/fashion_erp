@@ -118,16 +118,27 @@ class TestStateMachines(unittest.TestCase):
             inspect_result = module.start_after_sales_inspection("TK-001")
             decision_result = module.apply_after_sales_decision("TK-001", refund_amount=99)
             refund_result = module.approve_after_sales_refund("TK-001", refund_amount=99)
+            with patch.object(
+                module,
+                "get_after_sales_inventory_closure_summary",
+                return_value={
+                    "inventory_closure_status": "已最终处理",
+                    "pending_return_stock_entry": "STE-PENDING-001",
+                    "final_disposition_stock_entry": "STE-FINAL-001",
+                },
+            ):
+                close_result = module.close_after_sales_ticket("TK-001")
 
         self.assertEqual(waiting_result["ticket_status"], "待退回")
         self.assertEqual(receive_result["ticket_status"], "已收货")
         self.assertEqual(inspect_result["ticket_status"], "质检中")
         self.assertEqual(decision_result["ticket_status"], "待退款")
-        self.assertEqual(refund_result["ticket_status"], "已关闭")
+        self.assertEqual(refund_result["ticket_status"], "待处理")
         self.assertEqual(refund_result["refund_status"], "已退款")
+        self.assertEqual(close_result["ticket_status"], "已关闭")
         self.assertEqual(
             [row.action_type for row in refund_doc.logs],
-            ["状态变更", "收货", "质检", "状态变更", "退款"],
+            ["状态变更", "收货", "质检", "状态变更", "退款", "关闭"],
         )
 
         replacement_doc = FakeDoc(

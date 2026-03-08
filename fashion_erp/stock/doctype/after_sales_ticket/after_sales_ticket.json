@@ -33,6 +33,10 @@
   "refund_amount",
   "refund_status",
   "replacement_sales_order",
+  "replacement_fulfillment_status",
+  "inventory_closure_status",
+  "pending_return_stock_entry",
+  "final_disposition_stock_entry",
   "owner_user",
   "handler_user",
   "remark",
@@ -235,6 +239,39 @@
    "fieldtype": "Link",
    "label": "补发销售订单",
    "options": "Sales Order",
+   "search_index": 1
+  },
+  {
+   "fieldname": "replacement_fulfillment_status",
+   "fieldtype": "Select",
+   "label": "补发履约状态",
+   "options": "待配货\n履约中\n待发货\n部分发货\n已发货\n已完成\n售后中\n已关闭\n已取消",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "未回写",
+   "fieldname": "inventory_closure_status",
+   "fieldtype": "Select",
+   "label": "库存闭环状态",
+   "options": "未回写\n待检已入账\n已最终处理",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "pending_return_stock_entry",
+   "fieldtype": "Link",
+   "label": "待检入库凭证",
+   "options": "Stock Entry",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "final_disposition_stock_entry",
+   "fieldtype": "Link",
+   "label": "最终处理凭证",
+   "options": "Stock Entry",
+   "read_only": 1,
    "search_index": 1
   },
   {

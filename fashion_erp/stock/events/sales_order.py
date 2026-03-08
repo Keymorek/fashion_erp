@@ -1,6 +1,11 @@
 import frappe
 from frappe import _
 
+from fashion_erp.stock.services.after_sales_service import (
+    AFTER_SALES_COMPLETED_REPLACEMENT_FULFILLMENT_STATUSES,
+    AFTER_SALES_REPLACEMENT_TYPES,
+    sync_after_sales_ticket_replacement_order,
+)
 from fashion_erp.stock.services.sales_order_fulfillment_service import (
     sync_linked_sales_orders_fulfillment_status as _sync_linked_sales_orders_fulfillment_status,
     sync_sales_order_fulfillment_status,
@@ -40,18 +45,54 @@ def sync_after_sales_replacement_order(doc, method=None) -> None:
     ticket_row = frappe.db.get_value(
         "After Sales Ticket",
         after_sales_ticket,
-        ["replacement_sales_order"],
+        ["replacement_sales_order", "replacement_fulfillment_status", "ticket_status", "ticket_type"],
         as_dict=True,
     ) or {}
     if not ticket_row:
         return
 
+    next_replacement_sales_order = _get_next_replacement_sales_order_name(doc, method=method)
+    next_replacement_fulfillment_status = _get_next_replacement_fulfillment_status(
+        doc,
+        method=method,
+    )
     current_value = normalize_text(ticket_row.get("replacement_sales_order"))
-    if current_value == normalize_text(getattr(doc, "name", None)):
+    current_progress = normalize_text(ticket_row.get("replacement_fulfillment_status"))
+    if (
+        current_value == next_replacement_sales_order
+        and current_progress == next_replacement_fulfillment_status
+    ):
         return
 
-    ticket = frappe.get_doc("After Sales Ticket", after_sales_ticket)
-    ticket.db_set("replacement_sales_order", doc.name, update_modified=False)
+    if _requires_full_after_sales_replacement_sync(
+        ticket_row,
+        next_replacement_sales_order=next_replacement_sales_order,
+        next_replacement_fulfillment_status=next_replacement_fulfillment_status,
+    ):
+        sync_after_sales_ticket_replacement_order(
+            after_sales_ticket,
+            sales_order_name=normalize_text(getattr(doc, "name", None)),
+            sales_order_doc=doc,
+            operation=_map_sales_order_event_to_replacement_operation(method),
+        )
+        return
+
+    if current_value != next_replacement_sales_order:
+        frappe.db.set_value(
+            "After Sales Ticket",
+            after_sales_ticket,
+            "replacement_sales_order",
+            next_replacement_sales_order,
+            update_modified=False,
+        )
+    if current_progress != next_replacement_fulfillment_status:
+        frappe.db.set_value(
+            "After Sales Ticket",
+            after_sales_ticket,
+            "replacement_fulfillment_status",
+            next_replacement_fulfillment_status,
+            update_modified=False,
+        )
 
 
 def sync_linked_sales_orders_fulfillment_status(doc, method=None) -> None:
@@ -86,3 +127,67 @@ def _validate_external_order_uniqueness(doc) -> None:
                 frappe.bold(name),
             )
         )
+
+
+def _map_sales_order_event_to_replacement_operation(method: str | None) -> str | None:
+    if method == "on_cancel":
+        return "cancel"
+    if method == "on_trash":
+        return "trash"
+    if method == "after_insert":
+        return "create"
+    return "update"
+
+
+def _get_next_replacement_sales_order_name(doc, *, method: str | None = None) -> str:
+    if method in ("on_cancel", "on_trash"):
+        return ""
+    if str(getattr(doc, "docstatus", 0)) == "2":
+        return ""
+    return normalize_text(getattr(doc, "name", None))
+
+
+def _get_next_replacement_fulfillment_status(doc, *, method: str | None = None) -> str:
+    if not _get_next_replacement_sales_order_name(doc, method=method):
+        return ""
+
+    fulfillment_status = normalize_text(getattr(doc, "fulfillment_status", None))
+    if fulfillment_status:
+        return fulfillment_status
+
+    status = normalize_text(getattr(doc, "status", None))
+    if status in ("Closed", "已关闭"):
+        return "已关闭"
+    if status in ("Completed", "已完成"):
+        return "已完成"
+    return "待配货"
+
+
+def _requires_full_after_sales_replacement_sync(
+    ticket_row,
+    *,
+    next_replacement_sales_order: str,
+    next_replacement_fulfillment_status: str,
+) -> bool:
+    if normalize_text(ticket_row.get("ticket_type")) not in AFTER_SALES_REPLACEMENT_TYPES:
+        return False
+
+    current_ticket_status = normalize_text(ticket_row.get("ticket_status"))
+    current_replacement_fulfillment_status = normalize_text(
+        ticket_row.get("replacement_fulfillment_status")
+    )
+    if current_ticket_status == "已关闭":
+        return True
+    if not next_replacement_sales_order:
+        return True
+    if (
+        next_replacement_fulfillment_status
+        in AFTER_SALES_COMPLETED_REPLACEMENT_FULFILLMENT_STATUSES
+    ):
+        return True
+    if (
+        current_replacement_fulfillment_status
+        in AFTER_SALES_COMPLETED_REPLACEMENT_FULFILLMENT_STATUSES
+    ):
+        return True
+    return False

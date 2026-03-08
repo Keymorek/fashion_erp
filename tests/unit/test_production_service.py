@@ -39,7 +39,8 @@ class TestProductionService(unittest.TestCase):
                     "style": "ST-001",
                     "production_ticket": "PT-001",
                 },
-                ("Style", "ST-001", ("size_system",), True): {
+                ("Style", "ST-001", ("size_range_summary", "size_system"), True): {
+                    "size_range_summary": "S-M",
                     "size_system": "TOP",
                 },
             }
@@ -83,8 +84,8 @@ class TestProductionService(unittest.TestCase):
             module._validate_bom_reference(doc)
             module._validate_work_order_reference(doc)
             module._validate_work_order_reference(doc)
-            self.assertEqual(module._build_ticket_size_range(doc), "SIZE:TOP")
-            self.assertEqual(module._build_ticket_size_range(doc), "SIZE:TOP")
+            self.assertEqual(module._build_ticket_size_range(doc), "S-M")
+            self.assertEqual(module._build_ticket_size_range(doc), "S-M")
 
         self.assertEqual(exists_counter[("Style", "ST-001")], 1)
         self.assertEqual(exists_counter[("Item", "IT-TPL-001")], 1)
@@ -100,7 +101,7 @@ class TestProductionService(unittest.TestCase):
             1,
         )
         self.assertEqual(
-            lookup_counter[("Style", "ST-001", ("size_system",), True)],
+            lookup_counter[("Style", "ST-001", ("size_range_summary", "size_system"), True)],
             1,
         )
 

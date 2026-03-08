@@ -3,6 +3,7 @@ from frappe import _
 
 from fashion_erp.style.services.style_service import (
     get_brand_abbreviation,
+    get_selected_style_size_rows,
     get_style_variant_generation_issues,
 )
 
@@ -26,7 +27,7 @@ def create_template_item_for_style(style_name: str, *, style_doc=None) -> dict[s
     style = _get_style_doc(style_name, style_doc=style_doc)
 
     if not style.item_group:
-        frappe.throw(_("创建模板货品前必须先选择物料组。"))
+        frappe.throw(_("创建模板货品前必须先选择成品物料组。"))
 
     template_code = build_template_item_code(style)
     template_name = _build_template_item_name(style.style_name)
@@ -69,7 +70,7 @@ def create_template_item_for_style(style_name: str, *, style_doc=None) -> dict[s
 
 def generate_variants_for_style(style_name: str, *, style_doc=None) -> dict[str, object]:
     style = _get_style_doc(style_name, style_doc=style_doc)
-    size_rows = _get_size_rows(style.size_system, include_name=True)
+    size_rows = get_selected_style_size_rows(style)
     size_codes = [size_row.size_code for size_row in size_rows]
     brand_prefix = get_brand_abbreviation(style.brand)
     issues = get_style_variant_generation_issues(
@@ -116,7 +117,7 @@ def generate_variants_for_style(style_name: str, *, style_doc=None) -> dict[str,
 def build_style_matrix(style_name: str, *, style_doc=None) -> dict[str, object]:
     style = _get_style_doc(style_name, style_doc=style_doc)
     matrix_brand_prefix = get_brand_abbreviation(style.brand) or "?"
-    size_rows = _get_size_rows(style.size_system)
+    size_rows = get_selected_style_size_rows(style)
     issues = get_style_variant_generation_issues(
         style,
         enabled_size_codes=[size_row.size_code for size_row in size_rows],
@@ -187,20 +188,6 @@ def _get_style_doc(style_name: str | None, *, style_doc=None):
 def _get_matrix_item_snapshots(style, color_rows, size_rows, brand_prefix: str) -> dict[str, object]:
     sku_codes = _build_variant_sku_codes(style, color_rows, size_rows, brand_prefix)
     return _get_item_snapshots(sku_codes)
-
-
-def _get_size_rows(size_system: str, *, include_name: bool = False) -> list[object]:
-    fields = ["size_code", "size_name", "sort_order"]
-    if include_name:
-        fields.insert(0, "name")
-    return frappe.get_all(
-        "Size Code",
-        filters={"size_system": size_system, "enabled": 1},
-        fields=fields,
-        order_by="sort_order asc, size_code asc",
-    )
-
-
 def _build_variant_sku_codes(style, color_rows, size_rows, brand_prefix: str) -> list[str]:
     return [
         _build_sku_code_with_prefix(brand_prefix, style, color_row.color_code, size_row.size_code)

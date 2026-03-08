@@ -92,6 +92,11 @@ class TestSeedAndSkuFlow(unittest.TestCase):
             description="测试款",
             brand="KM",
             size_system="TOP",
+            style_sizes=[
+                SimpleNamespace(size="TOP-S", size_code="S", size_name="S", sort_order=10),
+                SimpleNamespace(size="TOP-M", size_code="M", size_name="M", sort_order=20),
+                SimpleNamespace(size="TOP-L", size_code="L", size_name="L", sort_order=30),
+            ],
             colors=[
                 SimpleNamespace(enabled=1, color="黑色", color_name="黑色", color_code="BLK"),
             ],
@@ -155,12 +160,6 @@ class TestSeedAndSkuFlow(unittest.TestCase):
         self.env.get_doc_handler = get_doc
         self.env.get_all_handler = lambda doctype, **kwargs: (
             [
-                {"name": "S", "size_code": "S", "size_name": "S", "sort_order": 10},
-                {"name": "M", "size_code": "M", "size_name": "M", "sort_order": 20},
-                {"name": "L", "size_code": "L", "size_name": "L", "sort_order": 30},
-            ]
-            if doctype == "Size Code"
-            else [
                 {"item_code": "KM-SZ001-BLK-S"},
                 {"item_code": "KM-SZ001-BLK-M"},
             ]
@@ -222,6 +221,10 @@ class TestSeedAndSkuFlow(unittest.TestCase):
             description="测试款",
             brand="KM",
             size_system="TOP",
+            style_sizes=[
+                SimpleNamespace(size="TOP-S", size_code="S", size_name="S", sort_order=10),
+                SimpleNamespace(size="TOP-M", size_code="M", size_name="M", sort_order=20),
+            ],
             colors=[
                 SimpleNamespace(enabled=1, color="黑色", color_name="黑色", color_code="BLK"),
             ],
@@ -269,11 +272,6 @@ class TestSeedAndSkuFlow(unittest.TestCase):
 
         def get_all(doctype, **kwargs):
             get_all_counter[doctype] += 1
-            if doctype == "Size Code":
-                return [
-                    {"name": "S", "size_code": "S", "size_name": "S", "sort_order": 10},
-                    {"name": "M", "size_code": "M", "size_name": "M", "sort_order": 20},
-                ]
             if doctype == "Item":
                 self.assertEqual(
                     kwargs.get("filters"),
@@ -293,7 +291,7 @@ class TestSeedAndSkuFlow(unittest.TestCase):
         ):
             result = module.generate_variants_for_style("ST-001")
 
-        self.assertEqual(get_all_counter["Size Code"], 1)
+        self.assertEqual(get_all_counter["Size Code"], 0)
         self.assertEqual(get_all_counter["Item"], 1)
         self.assertEqual(exists_counter[("Item", "KM-SZ001-BLK-S")], 0)
         self.assertEqual(exists_counter[("Item", "KM-SZ001-BLK-M")], 0)
@@ -315,6 +313,10 @@ class TestSeedAndSkuFlow(unittest.TestCase):
             style_code="SZ001",
             brand="KM",
             size_system="TOP",
+            style_sizes=[
+                SimpleNamespace(size="TOP-S", size_code="S", size_name="S", sort_order=10),
+                SimpleNamespace(size="TOP-M", size_code="M", size_name="M", sort_order=20),
+            ],
             colors=[
                 SimpleNamespace(enabled=1, color="黑色", color_name="黑色", color_code="BLK"),
                 SimpleNamespace(enabled=1, color="白色", color_name="白色", color_code="WHT"),
@@ -323,11 +325,6 @@ class TestSeedAndSkuFlow(unittest.TestCase):
 
         def get_all(doctype, **kwargs):
             get_all_counter[doctype] += 1
-            if doctype == "Size Code":
-                return [
-                    {"size_code": "S", "size_name": "S", "sort_order": 10},
-                    {"size_code": "M", "size_name": "M", "sort_order": 20},
-                ]
             if doctype == "Item":
                 self.assertEqual(
                     kwargs.get("filters"),
@@ -369,7 +366,7 @@ class TestSeedAndSkuFlow(unittest.TestCase):
         ):
             result = module.build_style_matrix("ST-001")
 
-        self.assertEqual(get_all_counter["Size Code"], 1)
+        self.assertEqual(get_all_counter["Size Code"], 0)
         self.assertEqual(get_all_counter["Item"], 1)
         self.assertEqual(get_all_counter["Bin"], 1)
         self.assertEqual(result["summary"]["existing_count"], 2)

@@ -6,7 +6,10 @@ from fashion_erp.style.services.sku_service import (
     create_template_item_for_style,
     generate_variants_for_style,
 )
-from fashion_erp.style.services.style_service import get_style_variant_generation_issues
+from fashion_erp.style.services.style_service import (
+    get_product_category_size_rule as get_product_category_size_rule_payload,
+    get_style_variant_generation_issues,
+)
 
 
 def _get_style(style_name: str):
@@ -70,4 +73,12 @@ def get_style_matrix(style_name: str) -> dict[str, object]:
     return {
         "ok": True,
         "result": build_style_matrix(style_name, style_doc=style),
+    }
+
+
+@frappe.whitelist()
+def get_product_category_size_rule(product_category_name: str) -> dict[str, object]:
+    return {
+        "ok": True,
+        "result": get_product_category_size_rule_payload(product_category_name),
     }

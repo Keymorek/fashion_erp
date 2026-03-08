@@ -15,7 +15,7 @@
 
 1. ERP 正式起点是 `Style` 款式录入
 2. 季度主题、设计理念、品类规划仍在外部软件
-3. 平台 API 同步永久搁置，订单只能手工同步
+3. 所有依赖平台官方数据结构或接口的能力，当前统一按 `外部依赖阻塞/暂停` 处理
 4. 大货默认来自第三方外包工厂
 5. 面料、辅料由我方提供，不由外包工厂自供
 6. 包装耗材也由我方采购、入库、出库
@@ -94,11 +94,9 @@
 
 当前进度：
 
-- `T430/T431` 已完成基础版，`Channel Store` 已补 `default_company / default_customer` 默认导入上下文，已新增 `Order Sync Batch / Order Sync Batch Item` 承接批次和行级留痕，保存时可同步店铺默认值、规范化明细并计算 `total_rows / valid_rows / failed_rows / imported_orders / duplicate_orders`
-- `T430/T431` 已具备 `preview_import / execute_import` 服务端动作，可按 `channel_store + external_order_id` 聚合预览、预判重复订单、并创建 `Sales Order` 草稿；订单行会按 `Item` 自动补齐 `style / color / size` 冗余字段
-- `T430/T431` 已支持在 `Order Sync Batch` 表单通过对话框粘贴 CSV 内容导入明细，并生成 `source_hash` 留痕；标准模板已落仓库
-- `T430/T431` 已补 `Sales Order(channel_store, external_order_id)` 索引 patch，但仍需站点执行 migrate 后正式落库
-- `T430/T431` 当前仍未补附件上传式导入、导入结果报表和更完整的批量交互优化
+- `T430/T431` 仓库内已具备 `Channel Store / Order Sync Batch / preview_import / execute_import` 等基础实现，可保留作内部结构参考
+- `T430/T431` 已支持店铺默认上下文、批次/行级留痕、CSV 粘贴导入、去重预判、订单聚合和 `Sales Order` 草稿创建
+- `T430/T431` 但因暂时没有抖音官方稳定数据来源结构，当前统一按 `外部依赖阻塞/暂停` 处理；附件上传导入、导入结果报表和更完整批量交互不再继续投入
 - `T432` 已完成基础版，已给 `Sales Order / Sales Order Item` 增加履约状态字段；保存销售订单时会统一初始化或聚合订单头/订单行状态，并基于 `delivered_qty` 自动推进到 `部分发货 / 已发货`
 - `T432` 已补 `Delivery Note.on_submit / on_cancel` 回刷，发货或撤销发货后会重算关联 `Sales Order` 的订单头/订单行履约状态；当前中间态仍以订单行手工维护为主，待 `T433` 仓储动作接管
 - `T433` 已完成基础版，已新增 `Sales Order` 履约服务层动作 `配货 / 拣货 / 打包 / 生成发货单`，可直接推进订单行状态到 `已锁库存 / 已拣货 / 待发货`
@@ -108,15 +106,24 @@
 - `T435` 已完成基础版，`Delivery Note` 已补 `manual_logistics_fee / fulfillment_total_cost` 字段；保存时会把包装耗材估算金额与手工快递费汇总成统一履约总成本
 - `T435` 已补履约成本汇总接口，可按日期范围、公司汇总已提交 `Delivery Note` 的耗材金额、手工快递费和履约总成本；当前金额口径仍为“耗材估算金额 + 手工快递费”
 - `T440` 已完成基础版，售后工单激活时会把原销售订单头状态推进为 `售后中`，命中的销售订单行推进为 `售后中`；工单关闭后命中的订单行会推进为 `已关闭`
-- `T440` 已补 `After Sales Ticket.on_update` 回刷，工单状态变化时会重算原单与补发单的销售订单履约状态；补发单本身仍按正常履约主线推进，不被工单强制锁死
+- `T440` 已补 `After Sales Ticket.on_update` 回刷，工单状态变化时会重算原单与补发单的销售订单履约状态；同时已补补发单直建、补发履约状态回写，以及补发单完成/取消后的售后工单自动关单与回退
 - `T422` 已完成基础版，`Outsource Receipt / Outsource Receipt Item` 已补短装、错色、错码、次品异常字段与汇总字段；零到货的纯短装行允许留痕，但不会进入入库或质检落账
 - `T422` 当前仍是轻量异常留痕口径，已补异常数量汇总与异常摘要；尚未扩展为独立异常单、对厂索赔或责任归属流程
-- `T441` 已由现有售后服务承接，已具备系统日志自动补全、处理结论状态建议与结案条件校验；后续若继续保留本任务，只再承接增强项
+- `T441` 已由现有售后服务承接，现已补齐库存闭环增强：售后单可直接提交库存凭证，`Stock Entry` 提交/撤销会自动回写售后工单的待检/最终处理凭证与库存闭环状态，退款后和关闭前也会真实校验最终处理库存是否已回写；补发场景下关闭前还会校验补发单是否已真实履约完成
 
 ### 3E 运营与财务分析
 
 - 运营报表
 - 财务/成本报表
+
+当前进度：
+
+- `T450` 已完成基础版，已新增 `Style Inventory Overview / Material Supply Overview / Outsource Receipt Overview / Sales Fulfillment Overview / After Sales Overview`
+- `T450` 已把 5 张运营报表挂入 `Fashion ERP` Workspace，当前可直接从工作台进入
+- `T451` 已完成基础版，已新增 `Outsource Estimated Cost Analysis / Material Procurement Cost Analysis / Fulfillment Cost Analysis`
+- `T451` 已把 3 张财务/成本报表挂入 `Fashion ERP` Workspace，当前可直接从工作台进入
+- `T490` 已完成基础版，已新增 `Production Board`，可直接从 `Production Ticket` 视角查看阶段分布、延期、最近日志和 BOM/工单/库存联动
+- `T490` 已把 `Production Board` 挂入 `Fashion ERP` Workspace 的 `辅助生产` 卡片
 
 ### 3F 质量保障与性能收口
 
@@ -135,15 +142,19 @@
 
 - 这一轨道正式纳入计划
 - `T460/T461` 已完成，且当前单元测试口径 `python3 -m unittest discover -s custom_apps/fashion_erp/tests/unit -p 'test_*.py'` 已通过
-- 下一步回到业务主线，按 `T450 / T451 -> T490` 推进
+- 本轮 `T450 / T451 / T490` 已完成基础交付，后续仅在真实内部生产场景明确后再拆更深任务
 - 后续若出现新的查询性能需求，随对应业务任务一并处理，不再单独保留 `T462`
 
-## 第三阶段明确不做
+## 第三阶段外部依赖阻塞/暂停项
 
 - 平台 API 对接
 - 自动拉单
 - 自动回写平台发货状态
 - 自动回写平台售后状态
+- 自动退款对账
+
+## 第三阶段明确后置
+
 - 完整内部生产闭环
 - 自动根据外包订单扣减原料库存
 - 复杂车间排产
@@ -159,9 +170,9 @@
 4. 外包下单与预计成本
 5. 外包订单与原辅料关联
 6. 外包到货入库与质检
-7. 手工订单同步
-8. 履约状态与履约成本
-9. 售后闭环
+7. 履约状态与履约成本
+8. 售后闭环
+9. 独立维修工单闭环
 
 ### P1
 
@@ -177,6 +188,10 @@
 
 1. 打样辅助之外的内部生产支持
 2. 复杂制造对象
+
+## 当前审查后的下一步研发计划
+
+1. `独立维修工单闭环`
 
 ## 后续承接
 

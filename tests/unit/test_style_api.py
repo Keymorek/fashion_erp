@@ -97,6 +97,10 @@ class TestStyleApi(unittest.TestCase):
             description="测试款",
             brand="KM",
             size_system="TOP",
+            style_sizes=[
+                SimpleNamespace(size="TOP-S", size_code="S", size_name="S", sort_order=10),
+                SimpleNamespace(size="TOP-M", size_code="M", size_name="M", sort_order=20),
+            ],
             colors=[SimpleNamespace(enabled=1, color="黑色", color_name="黑色", color_code="BLK")],
         )
         style_load_count = 0
@@ -121,11 +125,6 @@ class TestStyleApi(unittest.TestCase):
             raise KeyError((arg1, arg2))
 
         def get_all(doctype, **kwargs):
-            if doctype == "Size Code":
-                return [
-                    {"name": "S", "size_code": "S", "size_name": "S", "sort_order": 10},
-                    {"name": "M", "size_code": "M", "size_name": "M", "sort_order": 20},
-                ]
             if doctype == "Item":
                 return []
             return []
@@ -153,6 +152,10 @@ class TestStyleApi(unittest.TestCase):
             style_code="SZ001",
             brand="KM",
             size_system="TOP",
+            style_sizes=[
+                SimpleNamespace(size="TOP-S", size_code="S", size_name="S", sort_order=10),
+                SimpleNamespace(size="TOP-M", size_code="M", size_name="M", sort_order=20),
+            ],
             colors=[SimpleNamespace(enabled=1, color="黑色", color_name="黑色", color_code="BLK")],
         )
         style_load_count = 0
@@ -166,11 +169,6 @@ class TestStyleApi(unittest.TestCase):
             raise KeyError((doctype, name))
 
         def get_all(doctype, **kwargs):
-            if doctype == "Size Code":
-                return [
-                    {"size_code": "S", "size_name": "S", "sort_order": 10},
-                    {"size_code": "M", "size_name": "M", "sort_order": 20},
-                ]
             if doctype == "Item":
                 return []
             return []

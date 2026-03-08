@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from helpers import FakeDoc, build_frappe_env
 
@@ -257,27 +258,53 @@ class TestSalesOrderEvent(unittest.TestCase):
 
     def test_sync_after_sales_replacement_order_backfills_ticket(self):
         module = self.env.load_module("fashion_erp.stock.events.sales_order")
-        self.env.db.value_map[("After Sales Ticket", "TK-001", ("replacement_sales_order",), True)] = {
-            "replacement_sales_order": ""
+        self.env.db.value_map[
+            (
+                "After Sales Ticket",
+                "TK-001",
+                ("replacement_sales_order", "replacement_fulfillment_status", "ticket_status", "ticket_type"),
+                True,
+            )
+        ] = {
+            "replacement_sales_order": "",
+            "replacement_fulfillment_status": "",
+            "ticket_status": "待补发",
+            "ticket_type": "补发",
         }
-        ticket = FakeDoc(name="TK-001")
-        db_set_calls = []
+        doc = FakeDoc(
+            name="SO-001",
+            after_sales_ticket="TK-001",
+            fulfillment_status="待配货",
+            docstatus=0,
+            status="Draft",
+        )
 
-        def db_set(fieldname, value, update_modified=False):
-            db_set_calls.append((fieldname, value, update_modified))
+        with patch.object(module, "sync_after_sales_ticket_replacement_order") as mocked_sync:
+            module.sync_after_sales_replacement_order(doc)
 
-        ticket.db_set = db_set
-        self.env.get_doc_handler = lambda doctype, name=None: ticket if (doctype, name) == ("After Sales Ticket", "TK-001") else None
-        doc = FakeDoc(name="SO-001", after_sales_ticket="TK-001")
-
-        module.sync_after_sales_replacement_order(doc)
-
-        self.assertEqual(db_set_calls, [("replacement_sales_order", "SO-001", False)])
+        self.assertEqual(
+            self.env.db.set_value_calls,
+            [
+                ("After Sales Ticket", "TK-001", "replacement_sales_order", "SO-001", {"update_modified": False}),
+                ("After Sales Ticket", "TK-001", "replacement_fulfillment_status", "待配货", {"update_modified": False}),
+            ],
+        )
+        mocked_sync.assert_not_called()
 
     def test_sync_after_sales_replacement_order_skips_get_doc_when_ticket_already_linked(self):
         module = self.env.load_module("fashion_erp.stock.events.sales_order")
-        self.env.db.value_map[("After Sales Ticket", "TK-002", ("replacement_sales_order",), True)] = {
-            "replacement_sales_order": "SO-002"
+        self.env.db.value_map[
+            (
+                "After Sales Ticket",
+                "TK-002",
+                ("replacement_sales_order", "replacement_fulfillment_status", "ticket_status", "ticket_type"),
+                True,
+            )
+        ] = {
+            "replacement_sales_order": "SO-002",
+            "replacement_fulfillment_status": "待配货",
+            "ticket_status": "待补发",
+            "ticket_type": "补发",
         }
 
         def fail_exists(doctype, name):
@@ -292,9 +319,85 @@ class TestSalesOrderEvent(unittest.TestCase):
 
         self.env.db.exists = fail_exists
         self.env.get_doc_handler = fail_get_doc
-        doc = FakeDoc(name="SO-002", after_sales_ticket="TK-002")
+        doc = FakeDoc(
+            name="SO-002",
+            after_sales_ticket="TK-002",
+            fulfillment_status="待配货",
+            docstatus=0,
+            status="Draft",
+        )
 
-        module.sync_after_sales_replacement_order(doc)
+        with patch.object(module, "sync_after_sales_ticket_replacement_order") as mocked_sync:
+            module.sync_after_sales_replacement_order(doc)
+
+        mocked_sync.assert_not_called()
+        self.assertEqual(self.env.db.set_value_calls, [])
+
+    def test_sync_after_sales_replacement_order_uses_full_sync_when_replacement_is_completed(self):
+        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        self.env.db.value_map[
+            (
+                "After Sales Ticket",
+                "TK-003",
+                ("replacement_sales_order", "replacement_fulfillment_status", "ticket_status", "ticket_type"),
+                True,
+            )
+        ] = {
+            "replacement_sales_order": "SO-003",
+            "replacement_fulfillment_status": "待发货",
+            "ticket_status": "待补发",
+            "ticket_type": "补发",
+        }
+        doc = FakeDoc(
+            name="SO-003",
+            after_sales_ticket="TK-003",
+            fulfillment_status="已发货",
+            docstatus=0,
+            status="Draft",
+        )
+
+        with patch.object(module, "sync_after_sales_ticket_replacement_order") as mocked_sync:
+            module.sync_after_sales_replacement_order(doc)
+
+        mocked_sync.assert_called_once_with(
+            "TK-003",
+            sales_order_name="SO-003",
+            sales_order_doc=doc,
+            operation="update",
+        )
+
+    def test_sync_after_sales_replacement_order_uses_full_sync_when_replacement_is_canceled(self):
+        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        self.env.db.value_map[
+            (
+                "After Sales Ticket",
+                "TK-004",
+                ("replacement_sales_order", "replacement_fulfillment_status", "ticket_status", "ticket_type"),
+                True,
+            )
+        ] = {
+            "replacement_sales_order": "SO-004",
+            "replacement_fulfillment_status": "待发货",
+            "ticket_status": "待补发",
+            "ticket_type": "补发",
+        }
+        doc = FakeDoc(
+            name="SO-004",
+            after_sales_ticket="TK-004",
+            fulfillment_status="待发货",
+            docstatus=2,
+            status="Cancelled",
+        )
+
+        with patch.object(module, "sync_after_sales_ticket_replacement_order") as mocked_sync:
+            module.sync_after_sales_replacement_order(doc, method="on_cancel")
+
+        mocked_sync.assert_called_once_with(
+            "TK-004",
+            sales_order_name="SO-004",
+            sales_order_doc=doc,
+            operation="cancel",
+        )
 
     def test_sync_linked_sales_orders_fulfillment_status_updates_linked_orders(self):
         module = self.env.load_module("fashion_erp.stock.events.sales_order")

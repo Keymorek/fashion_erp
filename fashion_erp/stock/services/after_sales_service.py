@@ -84,8 +84,21 @@ REFUND_STATUS_ALIASES = {
     "DONE": "已退款",
     "REJECTED": "已驳回",
 }
+AFTER_SALES_INVENTORY_CLOSURE_OPTIONS = ("未回写", "待检已入账", "已最终处理")
 AFTER_SALES_RETURN_REQUIRED_TYPES = ("退货退款", "换货", "维修")
 AFTER_SALES_REPLACEMENT_TYPES = ("换货", "补发", "维修")
+AFTER_SALES_REPLACEMENT_FULFILLMENT_OPTIONS = (
+    "待配货",
+    "履约中",
+    "待发货",
+    "部分发货",
+    "已发货",
+    "已完成",
+    "售后中",
+    "已关闭",
+    "已取消",
+)
+AFTER_SALES_COMPLETED_REPLACEMENT_FULFILLMENT_STATUSES = {"已发货", "已完成", "已关闭"}
 AFTER_SALES_STOCK_ENTRY_MODES = ("待检入库", "最终处理")
 AFTER_SALES_STOCK_ENTRY_MODE_ALIASES = {
     "RECEIVE_PENDING": "待检入库",
@@ -150,6 +163,25 @@ def validate_after_sales_ticket(doc) -> None:
         REFUND_STATUS_OPTIONS,
         default="无需退款",
         alias_map=REFUND_STATUS_ALIASES,
+    )
+    doc.replacement_sales_order = normalize_text(doc.replacement_sales_order)
+    doc.replacement_fulfillment_status = normalize_select(
+        getattr(doc, "replacement_fulfillment_status", None),
+        "补发履约状态",
+        AFTER_SALES_REPLACEMENT_FULFILLMENT_OPTIONS,
+        default="",
+    )
+    doc.inventory_closure_status = normalize_select(
+        getattr(doc, "inventory_closure_status", None),
+        "库存闭环状态",
+        AFTER_SALES_INVENTORY_CLOSURE_OPTIONS,
+        default="未回写",
+    )
+    doc.pending_return_stock_entry = normalize_text(
+        getattr(doc, "pending_return_stock_entry", None)
+    )
+    doc.final_disposition_stock_entry = normalize_text(
+        getattr(doc, "final_disposition_stock_entry", None)
     )
     doc.remark = normalize_text(doc.remark)
     doc.owner_user = normalize_text(doc.owner_user) or frappe.session.user
@@ -330,7 +362,12 @@ def approve_after_sales_refund(
 
     previous_status = doc.ticket_status
     doc.refund_status = "已退款"
-    doc.ticket_status = "已关闭"
+    if _after_sales_inventory_writeback_required(doc) and not _has_after_sales_final_inventory_writeback(doc):
+        doc.ticket_status = "待处理"
+        message = _("退款已完成，待最终处理库存回写后再关闭售后工单。")
+    else:
+        doc.ticket_status = "已关闭"
+        message = _("退款已完成，售后工单已关闭。")
     _append_log(
         doc,
         action_type="退款",
@@ -340,7 +377,7 @@ def approve_after_sales_refund(
     )
     return _save_after_sales_action(
         doc,
-        _("退款已完成，售后工单已关闭。"),
+        message,
     )
 
 
@@ -370,6 +407,57 @@ def prepare_replacement_sales_order(
         "ok": True,
         "payload": payload,
         "message": _("补发销售订单草稿已生成。"),
+    }
+
+
+def create_replacement_sales_order(
+    ticket_name: str,
+    *,
+    company: str | None = None,
+    delivery_date: str | None = None,
+    set_warehouse: str | None = None,
+    note: str | None = None,
+) -> dict[str, object]:
+    doc = _get_after_sales_ticket_doc(ticket_name)
+    _ensure_after_sales_ticket_mutable(doc)
+    existing_replacement_order = normalize_text(getattr(doc, "replacement_sales_order", None))
+    if existing_replacement_order and frappe.db.exists("Sales Order", existing_replacement_order):
+        frappe.throw(
+            _("当前售后工单已存在补发销售订单 {0}。").format(frappe.bold(existing_replacement_order))
+        )
+    if existing_replacement_order:
+        doc.replacement_sales_order = ""
+        doc.replacement_fulfillment_status = ""
+
+    payload = _build_replacement_sales_order_payload(
+        doc,
+        company=normalize_text(company),
+        delivery_date=normalize_text(delivery_date),
+        set_warehouse=normalize_text(set_warehouse),
+        note=normalize_text(note),
+    )
+    sales_order = frappe.get_doc(payload).insert(ignore_permissions=True)
+    snapshot = sync_after_sales_ticket_replacement_order(
+        ticket_name,
+        sales_order_name=normalize_text(getattr(sales_order, "name", None)),
+        sales_order_doc=sales_order,
+        operation="create",
+    )
+    return {
+        "ok": True,
+        "sales_order": normalize_text(getattr(sales_order, "name", None)),
+        "replacement_sales_order": snapshot.get("replacement_sales_order") or normalize_text(
+            getattr(sales_order, "name", None)
+        ),
+        "replacement_fulfillment_status": snapshot.get("replacement_fulfillment_status") or _get_replacement_order_fulfillment_status(
+            doc,
+            sales_order_name=normalize_text(getattr(sales_order, "name", None)),
+            sales_order_doc=sales_order,
+        ),
+        "ticket_status": snapshot.get("ticket_status") or getattr(doc, "ticket_status", None),
+        "message": _("补发销售订单 {0} 已创建。").format(
+            frappe.bold(normalize_text(getattr(sales_order, "name", None)) or _("未命名销售订单"))
+        ),
     }
 
 
@@ -443,6 +531,293 @@ def prepare_after_sales_stock_entry(
     }
 
 
+def submit_after_sales_stock_entry(
+    ticket_name: str,
+    *,
+    entry_mode: str | None = None,
+    company: str | None = None,
+    purpose: str | None = None,
+    source_warehouse: str | None = None,
+    target_warehouse: str | None = None,
+    remark: str | None = None,
+) -> dict[str, object]:
+    prepared = prepare_after_sales_stock_entry(
+        ticket_name,
+        entry_mode=entry_mode,
+        company=company,
+        purpose=purpose,
+        source_warehouse=source_warehouse,
+        target_warehouse=target_warehouse,
+        remark=remark,
+    )
+    payload = prepared.get("payload") or {}
+    stock_entry = frappe.get_doc(payload)
+    stock_entry.insert(ignore_permissions=True)
+    if not hasattr(stock_entry, "submit"):
+        frappe.throw(_("库存凭证创建成功，但当前对象不支持提交流程。"))
+    stock_entry.submit()
+    snapshot = sync_after_sales_ticket_inventory_closure(
+        ticket_name,
+        stock_entry_name=getattr(stock_entry, "name", None),
+        operation="submit",
+    )
+    return {
+        "ok": True,
+        "stock_entry": getattr(stock_entry, "name", None),
+        "inventory_closure_status": snapshot.get("inventory_closure_status"),
+        "pending_return_stock_entry": snapshot.get("pending_return_stock_entry"),
+        "final_disposition_stock_entry": snapshot.get("final_disposition_stock_entry"),
+        "message": _("售后库存凭证已提交。"),
+    }
+
+
+def get_after_sales_inventory_closure_summary(ticket_name: str) -> dict[str, object]:
+    if not ticket_name:
+        return {
+            "inventory_closure_status": "未回写",
+            "pending_return_stock_entry": "",
+            "final_disposition_stock_entry": "",
+        }
+
+    detail_rows = frappe.get_all(
+        "Stock Entry Detail",
+        filters={"after_sales_ticket": ticket_name},
+        fields=["parent", "inventory_status_from", "inventory_status_to"],
+        order_by="modified desc, idx desc",
+    )
+    entry_names = sorted({normalize_text(row.get("parent")) for row in detail_rows or [] if normalize_text(row.get("parent"))})
+    if not entry_names:
+        return {
+            "inventory_closure_status": "未回写",
+            "pending_return_stock_entry": "",
+            "final_disposition_stock_entry": "",
+        }
+
+    stock_entries = frappe.get_all(
+        "Stock Entry",
+        filters={"name": ["in", entry_names]},
+        fields=["name", "posting_date", "posting_time", "docstatus"],
+    )
+    stock_entry_map = {
+        normalize_text(row.get("name")): row
+        for row in stock_entries or []
+        if normalize_text(row.get("name")) and row.get("docstatus") == 1
+    }
+
+    pending_entries: dict[str, dict[str, object]] = {}
+    final_entries: dict[str, dict[str, object]] = {}
+    for row in detail_rows or []:
+        parent = normalize_text(row.get("parent"))
+        stock_entry = stock_entry_map.get(parent)
+        if not stock_entry:
+            continue
+
+        inventory_status_from = normalize_text(row.get("inventory_status_from")).upper()
+        inventory_status_to = normalize_text(row.get("inventory_status_to")).upper()
+        if not inventory_status_from and inventory_status_to == "RETURN_PENDING":
+            pending_entries[parent] = stock_entry
+        elif inventory_status_from == "RETURN_PENDING" and inventory_status_to and inventory_status_to != "RETURN_PENDING":
+            final_entries[parent] = stock_entry
+
+    pending_return_stock_entry = _pick_latest_after_sales_stock_entry_name(pending_entries.values())
+    final_disposition_stock_entry = _pick_latest_after_sales_stock_entry_name(final_entries.values())
+    inventory_closure_status = "未回写"
+    if final_disposition_stock_entry:
+        inventory_closure_status = "已最终处理"
+    elif pending_return_stock_entry:
+        inventory_closure_status = "待检已入账"
+
+    return {
+        "inventory_closure_status": inventory_closure_status,
+        "pending_return_stock_entry": pending_return_stock_entry,
+        "final_disposition_stock_entry": final_disposition_stock_entry,
+    }
+
+
+def sync_after_sales_ticket_inventory_closure(
+    ticket_name: str,
+    *,
+    stock_entry_name: str | None = None,
+    operation: str | None = None,
+) -> dict[str, object]:
+    doc = _get_after_sales_ticket_doc(ticket_name)
+    previous_status = normalize_text(getattr(doc, "ticket_status", None))
+    previous_pending = normalize_text(getattr(doc, "pending_return_stock_entry", None))
+    previous_final = normalize_text(getattr(doc, "final_disposition_stock_entry", None))
+    previous_inventory_closure_status = normalize_text(
+        getattr(doc, "inventory_closure_status", None)
+    ) or "未回写"
+
+    snapshot = get_after_sales_inventory_closure_summary(ticket_name)
+    field_changes = {
+        "inventory_closure_status": snapshot.get("inventory_closure_status") or "未回写",
+        "pending_return_stock_entry": snapshot.get("pending_return_stock_entry") or "",
+        "final_disposition_stock_entry": snapshot.get("final_disposition_stock_entry") or "",
+    }
+    changed = False
+    for fieldname, value in field_changes.items():
+        if normalize_text(getattr(doc, fieldname, None)) == normalize_text(value):
+            continue
+        setattr(doc, fieldname, value)
+        changed = True
+
+    status_changed = False
+    if (
+        previous_status == "已关闭"
+        and doc.ticket_status != "已取消"
+        and _after_sales_inventory_writeback_required(doc)
+        and field_changes["inventory_closure_status"] != "已最终处理"
+    ):
+        doc.ticket_status = "待处理"
+        status_changed = True
+
+    if not changed and not status_changed:
+        snapshot["ticket_status"] = getattr(doc, "ticket_status", None)
+        return snapshot
+
+    if status_changed:
+        _append_log(
+            doc,
+            action_type="状态变更",
+            from_status=previous_status,
+            to_status=doc.ticket_status,
+            note=_build_after_sales_inventory_reopen_note(
+                stock_entry_name=stock_entry_name,
+                previous_pending=previous_pending,
+                previous_final=previous_final,
+            ),
+        )
+    elif operation and stock_entry_name:
+        log_payload = _build_after_sales_inventory_log_payload(
+            stock_entry_name=stock_entry_name,
+            operation=operation,
+            previous_pending=previous_pending,
+            previous_final=previous_final,
+            current_pending=field_changes["pending_return_stock_entry"],
+            current_final=field_changes["final_disposition_stock_entry"],
+            previous_inventory_closure_status=previous_inventory_closure_status,
+            current_inventory_closure_status=field_changes["inventory_closure_status"],
+        )
+        if log_payload:
+            _append_log(doc, **log_payload)
+
+    doc.flags.skip_after_sales_system_log = True
+    try:
+        doc.save(ignore_permissions=True, ignore_version=True)
+    finally:
+        doc.flags.skip_after_sales_system_log = False
+
+    snapshot["ticket_status"] = doc.ticket_status
+    return snapshot
+
+
+def sync_after_sales_ticket_replacement_order(
+    ticket_name: str,
+    *,
+    sales_order_name: str | None = None,
+    sales_order_doc=None,
+    operation: str | None = None,
+) -> dict[str, object]:
+    doc = _get_after_sales_ticket_doc(ticket_name)
+    previous_status = normalize_text(getattr(doc, "ticket_status", None))
+    previous_replacement_sales_order = normalize_text(
+        getattr(doc, "replacement_sales_order", None)
+    )
+    previous_replacement_fulfillment_status = normalize_text(
+        getattr(doc, "replacement_fulfillment_status", None)
+    )
+
+    next_replacement_sales_order = normalize_text(sales_order_name)
+    next_replacement_fulfillment_status = _get_replacement_order_fulfillment_status(
+        doc,
+        sales_order_name=next_replacement_sales_order,
+        sales_order_doc=sales_order_doc,
+        operation=operation,
+    )
+    if not next_replacement_fulfillment_status:
+        next_replacement_sales_order = ""
+
+    changed = False
+    for fieldname, value in {
+        "replacement_sales_order": next_replacement_sales_order,
+        "replacement_fulfillment_status": next_replacement_fulfillment_status,
+    }.items():
+        if normalize_text(getattr(doc, fieldname, None)) == normalize_text(value):
+            continue
+        setattr(doc, fieldname, value)
+        changed = True
+
+    next_status = previous_status
+    log_action_type = ""
+    log_note = ""
+    if doc.ticket_type in AFTER_SALES_REPLACEMENT_TYPES and previous_status != "已取消":
+        next_status, log_action_type, log_note = _resolve_after_sales_replacement_ticket_status(
+            doc,
+            previous_status=previous_status,
+            previous_replacement_sales_order=previous_replacement_sales_order,
+            next_replacement_sales_order=next_replacement_sales_order,
+            next_replacement_fulfillment_status=next_replacement_fulfillment_status,
+        )
+
+    status_changed = next_status != previous_status
+    if status_changed:
+        doc.ticket_status = next_status
+
+    appended_log = False
+    if (
+        operation == "create"
+        and next_replacement_sales_order
+        and not _has_after_sales_replacement_creation_log(doc, next_replacement_sales_order)
+    ):
+        _append_log(
+            doc,
+            action_type="补发",
+            from_status=previous_status if status_changed else "",
+            to_status=next_status if status_changed else "",
+            note=_("补发销售订单 {0} 已创建。").format(next_replacement_sales_order),
+        )
+        appended_log = True
+    elif status_changed:
+        _append_log(
+            doc,
+            action_type=log_action_type or ("关闭" if next_status == "已关闭" else "状态变更"),
+            from_status=previous_status,
+            to_status=next_status,
+            note=log_note or _("补发流程已更新。"),
+        )
+        appended_log = True
+    elif (
+        operation in ("cancel", "trash")
+        and previous_replacement_sales_order
+        and not next_replacement_sales_order
+    ):
+        _append_log(
+            doc,
+            action_type="补发",
+            note=_("补发销售订单 {0} 已取消或失效。").format(previous_replacement_sales_order),
+        )
+        appended_log = True
+
+    if not changed and not status_changed and not appended_log:
+        return {
+            "replacement_sales_order": previous_replacement_sales_order,
+            "replacement_fulfillment_status": previous_replacement_fulfillment_status,
+            "ticket_status": previous_status,
+        }
+
+    doc.flags.skip_after_sales_system_log = True
+    try:
+        doc.save(ignore_permissions=True, ignore_version=True)
+    finally:
+        doc.flags.skip_after_sales_system_log = False
+
+    return {
+        "replacement_sales_order": doc.replacement_sales_order,
+        "replacement_fulfillment_status": doc.replacement_fulfillment_status,
+        "ticket_status": doc.ticket_status,
+    }
+
+
 def close_after_sales_ticket(
     ticket_name: str,
     *,
@@ -453,10 +828,15 @@ def close_after_sales_ticket(
 
     if doc.ticket_status == "待退款" and doc.refund_status != "已退款":
         frappe.throw(_("关闭售后工单前必须先完成退款。"))
-    if doc.ticket_status == "待补发" and not doc.replacement_sales_order:
-        frappe.throw(_("关闭售后工单前必须先生成补发销售订单。"))
+    if doc.ticket_type in AFTER_SALES_REPLACEMENT_TYPES:
+        if not doc.replacement_sales_order:
+            frappe.throw(_("关闭售后工单前必须先生成补发销售订单。"))
+        if not _has_after_sales_completed_replacement_order(doc):
+            frappe.throw(_("关闭售后工单前必须先完成补发销售订单履约。"))
     if doc.ticket_status in ("新建", "待退回", "已收货", "质检中"):
         frappe.throw(_("处理未完成前不能关闭售后工单。"))
+    if _after_sales_inventory_writeback_required(doc) and not _has_after_sales_final_inventory_writeback(doc):
+        frappe.throw(_("关闭售后工单前必须先完成最终处理库存回写。"))
 
     previous_status = doc.ticket_status
     doc.ticket_status = "已关闭"
@@ -507,6 +887,8 @@ def _validate_links(doc) -> None:
     ensure_enabled_link("Return Reason", doc.return_reason)
     ensure_enabled_link("Return Disposition", doc.return_disposition)
     ensure_link_exists("Sales Order", doc.replacement_sales_order)
+    ensure_link_exists("Stock Entry", getattr(doc, "pending_return_stock_entry", None))
+    ensure_link_exists("Stock Entry", getattr(doc, "final_disposition_stock_entry", None))
     ensure_link_exists("User", doc.owner_user)
     ensure_link_exists("User", doc.handler_user)
 
@@ -804,6 +1186,7 @@ def _build_after_sales_response(doc, message: str) -> dict[str, object]:
         "refund_status": doc.refund_status,
         "refund_amount": doc.refund_amount,
         "replacement_sales_order": doc.replacement_sales_order,
+        "replacement_fulfillment_status": getattr(doc, "replacement_fulfillment_status", None),
         "received_at": str(doc.received_at) if doc.received_at else None,
         "message": message,
     }
@@ -1105,6 +1488,27 @@ def _get_after_sales_company(doc) -> str | None:
     return _get_cached_after_sales_default_company(doc) or None
 
 
+def _after_sales_inventory_writeback_required(doc) -> bool:
+    for row in getattr(doc, "items", None) or []:
+        if coerce_non_negative_float(getattr(row, "received_qty", None), "实收数量") > 0:
+            return True
+    return False
+
+
+def _has_after_sales_completed_replacement_order(doc) -> bool:
+    return (
+        _get_replacement_order_fulfillment_status(doc)
+        in AFTER_SALES_COMPLETED_REPLACEMENT_FULFILLMENT_STATUSES
+    )
+
+
+def _has_after_sales_final_inventory_writeback(doc) -> bool:
+    if not getattr(doc, "name", None):
+        return False
+    snapshot = get_after_sales_inventory_closure_summary(doc.name)
+    return snapshot.get("inventory_closure_status") == "已最终处理"
+
+
 def _get_after_sales_delivery_date(doc) -> str:
     if doc.sales_order:
         delivery_date = _get_cached_sales_order_header(doc, doc.sales_order).get("delivery_date")
@@ -1133,6 +1537,207 @@ def _filter_doc_payload(
         if meta.has_field(fieldname):
             filtered[fieldname] = value
     return filtered
+
+
+def _pick_latest_after_sales_stock_entry_name(rows) -> str:
+    latest_name = ""
+    latest_key = ("", "", "")
+    for row in rows or []:
+        stock_entry_name = normalize_text(row.get("name"))
+        if not stock_entry_name:
+            continue
+        current_key = (
+            str(row.get("posting_date") or ""),
+            str(row.get("posting_time") or ""),
+            stock_entry_name,
+        )
+        if current_key >= latest_key:
+            latest_key = current_key
+            latest_name = stock_entry_name
+    return latest_name
+
+
+def _resolve_after_sales_replacement_ticket_status(
+    doc,
+    *,
+    previous_status: str,
+    previous_replacement_sales_order: str,
+    next_replacement_sales_order: str,
+    next_replacement_fulfillment_status: str,
+) -> tuple[str, str, str]:
+    if not next_replacement_sales_order:
+        next_status = "待补发"
+        if previous_status == "已关闭":
+            return (
+                next_status,
+                "状态变更",
+                _("补发销售订单 {0} 已取消或失效，工单重新回到待补发。").format(
+                    previous_replacement_sales_order
+                ),
+            )
+        return next_status, "", ""
+
+    if (
+        next_replacement_fulfillment_status
+        in AFTER_SALES_COMPLETED_REPLACEMENT_FULFILLMENT_STATUSES
+    ):
+        if _after_sales_inventory_writeback_required(doc) and not _has_after_sales_final_inventory_writeback(doc):
+            return (
+                "待处理",
+                "状态变更",
+                _("补发销售订单 {0} 已完成，待最终处理库存回写后再关闭售后工单。").format(
+                    next_replacement_sales_order
+                ),
+            )
+        return (
+            "已关闭",
+            "关闭",
+            _("补发销售订单 {0} 已完成，售后工单已自动关闭。").format(
+                next_replacement_sales_order
+            ),
+        )
+
+    if previous_status == "已关闭":
+        return (
+            "待补发",
+            "状态变更",
+            _("补发销售订单 {0} 已重新回到履约中，工单重新回到待补发。").format(
+                next_replacement_sales_order
+            ),
+        )
+    return "待补发", "", ""
+
+
+def _build_after_sales_inventory_log_payload(
+    *,
+    stock_entry_name: str,
+    operation: str,
+    previous_pending: str,
+    previous_final: str,
+    current_pending: str,
+    current_final: str,
+    previous_inventory_closure_status: str,
+    current_inventory_closure_status: str,
+) -> dict[str, object] | None:
+    entry_kind = _resolve_after_sales_stock_entry_kind(
+        stock_entry_name=stock_entry_name,
+        previous_pending=previous_pending,
+        previous_final=previous_final,
+        current_pending=current_pending,
+        current_final=current_final,
+    )
+    if operation == "submit":
+        if entry_kind == "final" and previous_inventory_closure_status != current_inventory_closure_status:
+            return {
+                "action_type": "质检",
+                "note": _("售后最终处理凭证 {0} 已提交。").format(stock_entry_name),
+            }
+        if entry_kind == "pending" and previous_inventory_closure_status == "未回写":
+            return {
+                "action_type": "收货",
+                "note": _("售后待检入库凭证 {0} 已提交。").format(stock_entry_name),
+            }
+        return None
+
+    if operation == "cancel":
+        if entry_kind == "final":
+            return {
+                "action_type": "备注",
+                "note": _("售后最终处理凭证 {0} 已撤销。").format(stock_entry_name),
+            }
+        if entry_kind == "pending":
+            return {
+                "action_type": "备注",
+                "note": _("售后待检入库凭证 {0} 已撤销。").format(stock_entry_name),
+            }
+        return {
+            "action_type": "备注",
+            "note": _("售后库存凭证 {0} 已撤销。").format(stock_entry_name),
+        }
+
+    return None
+
+
+def _build_after_sales_inventory_reopen_note(
+    *,
+    stock_entry_name: str | None,
+    previous_pending: str,
+    previous_final: str,
+) -> str:
+    if stock_entry_name:
+        entry_kind = _resolve_after_sales_stock_entry_kind(
+            stock_entry_name=stock_entry_name,
+            previous_pending=previous_pending,
+            previous_final=previous_final,
+            current_pending="",
+            current_final="",
+        )
+        if entry_kind == "final":
+            return _("售后最终处理凭证 {0} 已撤销，工单重新回到待处理。").format(stock_entry_name)
+        if entry_kind == "pending":
+            return _("售后待检入库凭证 {0} 已撤销，工单重新回到待处理。").format(stock_entry_name)
+    return _("售后库存回写状态已回退，工单重新回到待处理。")
+
+
+def _resolve_after_sales_stock_entry_kind(
+    *,
+    stock_entry_name: str,
+    previous_pending: str,
+    previous_final: str,
+    current_pending: str,
+    current_final: str,
+) -> str | None:
+    if stock_entry_name in {normalize_text(previous_final), normalize_text(current_final)}:
+        return "final"
+    if stock_entry_name in {normalize_text(previous_pending), normalize_text(current_pending)}:
+        return "pending"
+    return None
+
+
+def _get_replacement_order_fulfillment_status(
+    doc,
+    *,
+    sales_order_name: str | None = None,
+    sales_order_doc=None,
+    operation: str | None = None,
+) -> str:
+    snapshot = _get_cached_replacement_sales_order_snapshot(
+        doc,
+        sales_order_name=sales_order_name,
+        sales_order_doc=sales_order_doc,
+        operation=operation,
+    )
+    if not snapshot:
+        return ""
+
+    if str(snapshot.get("docstatus")) == "2":
+        return ""
+
+    fulfillment_status = normalize_select(
+        snapshot.get("fulfillment_status"),
+        "补发履约状态",
+        AFTER_SALES_REPLACEMENT_FULFILLMENT_OPTIONS,
+        default="",
+    )
+    if fulfillment_status:
+        return fulfillment_status
+
+    status = normalize_text(snapshot.get("status"))
+    if status in ("Closed", "已关闭"):
+        return "已关闭"
+    if status in ("Completed", "已完成"):
+        return "已完成"
+    return "待配货"
+
+
+def _has_after_sales_replacement_creation_log(doc, sales_order_name: str) -> bool:
+    expected_note = _("补发销售订单 {0} 已创建。").format(sales_order_name)
+    for row in getattr(doc, "logs", None) or []:
+        if normalize_text(getattr(row, "action_type", None)) != "补发":
+            continue
+        if normalize_text(getattr(row, "note", None)) == expected_note:
+            return True
+    return False
 
 
 def _append_log(
@@ -1174,6 +1779,7 @@ def _reset_after_sales_validation_cache(doc) -> None:
         "default_company": "",
         "default_company_loaded": False,
         "stock_entry_types": {},
+        "replacement_sales_orders": {},
     }
     flags = getattr(doc, "flags", None)
     if flags is not None:
@@ -1312,6 +1918,49 @@ def _get_cached_sales_order_header(doc, sales_order_name: str):
             as_dict=True,
         ) or {}
     return cache[normalized_name]
+
+
+def _get_cached_replacement_sales_order_snapshot(
+    doc,
+    *,
+    sales_order_name: str | None = None,
+    sales_order_doc=None,
+    operation: str | None = None,
+):
+    normalized_name = normalize_text(sales_order_name) or normalize_text(
+        getattr(doc, "replacement_sales_order", None)
+    )
+    if not normalized_name:
+        return {}
+
+    if operation in ("cancel", "trash"):
+        return {}
+
+    if (
+        sales_order_doc is not None
+        and normalize_text(getattr(sales_order_doc, "name", None)) == normalized_name
+    ):
+        return {
+            "name": normalized_name,
+            "docstatus": getattr(sales_order_doc, "docstatus", 0),
+            "status": normalize_text(getattr(sales_order_doc, "status", None)),
+            "fulfillment_status": normalize_text(getattr(sales_order_doc, "fulfillment_status", None)),
+        }
+
+    cache = _get_after_sales_validation_cache(doc)["replacement_sales_orders"]
+    if normalized_name not in cache:
+        cache[normalized_name] = frappe.db.get_value(
+            "Sales Order",
+            normalized_name,
+            ["docstatus", "status", "fulfillment_status"],
+            as_dict=True,
+        ) or {}
+    snapshot = cache.get(normalized_name) or {}
+    if not snapshot:
+        return {}
+    snapshot = dict(snapshot)
+    snapshot["name"] = normalized_name
+    return snapshot
 
 
 def _get_cached_sales_invoice_customer(doc, sales_invoice_name: str) -> str:

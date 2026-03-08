@@ -33,10 +33,15 @@ doc_events = {
     },
     "Sales Order": {
         "validate": "fashion_erp.stock.events.sales_order.validate_sales_order_channel_context",
+        "after_insert": "fashion_erp.stock.events.sales_order.sync_after_sales_replacement_order",
         "on_update": "fashion_erp.stock.events.sales_order.sync_after_sales_replacement_order",
+        "on_cancel": "fashion_erp.stock.events.sales_order.sync_after_sales_replacement_order",
+        "on_trash": "fashion_erp.stock.events.sales_order.sync_after_sales_replacement_order",
     },
     "Stock Entry": {
         "validate": "fashion_erp.stock.events.stock_entry.validate_inventory_status_rules",
+        "on_submit": "fashion_erp.stock.events.stock_entry.sync_linked_after_sales_ticket_inventory_closure",
+        "on_cancel": "fashion_erp.stock.events.stock_entry.sync_linked_after_sales_ticket_inventory_closure",
     },
     "Work Order": {
         "on_update": "fashion_erp.garment_mfg.events.work_order.sync_production_ticket",

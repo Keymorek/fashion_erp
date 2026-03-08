@@ -1,7 +1,13 @@
+import frappe
+
+from fashion_erp.stock.services.after_sales_service import (
+    sync_after_sales_ticket_inventory_closure,
+)
 from fashion_erp.stock.services.stock_service import (
     prepare_return_metadata,
     validate_inventory_status_transition,
 )
+from fashion_erp.style.services.style_service import normalize_text
 
 
 def validate_inventory_status_rules(doc, method=None) -> None:
@@ -56,3 +62,45 @@ def _build_row_label(row) -> str:
     if row_index:
         return f"row {row_index}"
     return "stock entry line"
+
+
+def sync_linked_after_sales_ticket_inventory_closure(doc, method=None) -> None:
+    ticket_names = _collect_after_sales_tickets(doc)
+    existing_ticket_names = _get_existing_after_sales_tickets(ticket_names)
+    operation = "cancel" if getattr(doc, "docstatus", None) == 2 or method == "on_cancel" else "submit"
+    stock_entry_name = normalize_text(getattr(doc, "name", None))
+    for ticket_name in ticket_names:
+        if ticket_name not in existing_ticket_names:
+            continue
+        sync_after_sales_ticket_inventory_closure(
+            ticket_name,
+            stock_entry_name=stock_entry_name,
+            operation=operation,
+        )
+
+
+def _collect_after_sales_tickets(doc) -> list[str]:
+    ticket_names: set[str] = set()
+    header_ticket = normalize_text(getattr(doc, "after_sales_ticket", None))
+    if header_ticket:
+        ticket_names.add(header_ticket)
+    for row in getattr(doc, "items", []) or []:
+        ticket_name = normalize_text(getattr(row, "after_sales_ticket", None))
+        if ticket_name:
+            ticket_names.add(ticket_name)
+    return sorted(ticket_names)
+
+
+def _get_existing_after_sales_tickets(ticket_names: list[str]) -> set[str]:
+    if not ticket_names:
+        return set()
+    rows = frappe.get_all(
+        "After Sales Ticket",
+        filters={"name": ["in", ticket_names]},
+        fields=["name"],
+    )
+    return {
+        normalize_text(row.get("name"))
+        for row in rows or []
+        if normalize_text(row.get("name"))
+    }

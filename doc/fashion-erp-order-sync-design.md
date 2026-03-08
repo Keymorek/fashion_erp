@@ -11,6 +11,12 @@
 - 第三阶段任务清单：[fashion-erp-phase3-task-list.md](E:\Dropbox\Syn\Project\frappe_docker_ra\docs\fashion-erp-phase3-task-list.md)
 - 标准导入模板：[fashion-erp-order-sync-template.csv](E:\Dropbox\Syn\Project\frappe_docker_ra\docs\fashion-erp-order-sync-template.csv)
 
+当前文档状态：
+
+- 仓库内已存在 `T430/T431` 的基础实现
+- 但因暂时没有抖音官方稳定数据来源结构，`T430/T431` 当前统一按 `外部依赖阻塞/暂停` 处理
+- 本文档保留为已有基础实现和未来恢复研发时的结构参考
+
 ## 一、范围冻结
 
 当前手工订单同步只解决以下问题：
@@ -21,13 +27,17 @@
 4. 让导入结果稳定落到标准 `Sales Order / Sales Order Item`
 5. 为后续 `T432-T435` 的履约状态、仓储动作和履约成本提供干净入口
 
-当前明确不做：
+当前因外部依赖阻塞/暂停：
 
 1. 平台 API 自动拉单
 2. 平台商品编码自动映射内部 SKU
-3. 自动创建或同步客户主数据
-4. 自动回写平台发货状态
-5. 自动拆单、合单、退款回写
+3. 自动回写平台发货状态
+4. 自动退款回写
+
+当前仍不纳入本轮范围：
+
+1. 自动创建或同步客户主数据
+2. 自动拆单、合单
 
 ## 二、第一版输入前提
 
