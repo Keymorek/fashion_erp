@@ -1,5 +1,5 @@
 {
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"时尚企业管理\",\"level\":3,\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"主数据\",\"level\":4,\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"商品企划\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"原辅料与耗材\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"打样管理\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"外包管理\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"生产管理\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"库存设置\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"售后管理\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"渠道管理\",\"col\":3}}]",
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"时尚企业管理\",\"level\":3,\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"按业务流程找入口\",\"level\":4,\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"1. 商品开发\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"2. 供给与采购\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"3. 外包与到货\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"4. 订单与履约\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"5. 售后处理\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"6. 运营报表\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"7. 基础设置\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"8. 辅助生产\",\"col\":3}}]",
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
@@ -11,7 +11,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "商品企划",
+   "label": "1. 商品开发",
    "link_count": 0,
    "onboard": 0,
    "type": "Card Break"
@@ -20,12 +20,269 @@
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "款号档案",
+   "label": "款号档案（业务起点）",
    "link_count": 0,
    "link_to": "Style",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "打样单",
+   "link_count": 0,
+   "link_to": "Sample Ticket",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "工艺单",
+   "link_count": 0,
+   "link_to": "Craft Sheet",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "2. 供给与采购",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "物料档案",
+   "link_count": 0,
+   "link_to": "Item",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "供应商",
+   "link_count": 0,
+   "link_to": "Supplier",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "采购订单",
+   "link_count": 0,
+   "link_to": "Purchase Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "采购收货",
+   "link_count": 0,
+   "link_to": "Purchase Receipt",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "3. 外包与到货",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "外包单",
+   "link_count": 0,
+   "link_to": "Outsource Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "外包到货单",
+   "link_count": 0,
+   "link_to": "Outsource Receipt",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "4. 订单与履约",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "渠道店铺",
+   "link_count": 0,
+   "link_to": "Channel Store",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "订单同步批次（导入入口）",
+   "link_count": 0,
+   "link_to": "Order Sync Batch",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "销售订单",
+   "link_count": 0,
+   "link_to": "Sales Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "发货单",
+   "link_count": 0,
+   "link_to": "Delivery Note",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "库存凭证",
+   "link_count": 0,
+   "link_to": "Stock Entry",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "5. 售后处理",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "售后工单",
+   "link_count": 0,
+   "link_to": "After Sales Ticket",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "6. 运营报表",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "款号库存报表",
+   "link_count": 0,
+   "link_to": "Style Inventory Overview",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "原辅料库存与备货报表",
+   "link_count": 0,
+   "link_to": "Material Supply Overview",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "到货与入库报表",
+   "link_count": 0,
+   "link_to": "Outsource Receipt Overview",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "订单履约状态报表",
+   "link_count": 0,
+   "link_to": "Sales Fulfillment Overview",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "售后状态报表",
+   "link_count": 0,
+   "link_to": "After Sales Overview",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "7. 基础设置",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
   },
   {
    "dependencies": "",
@@ -94,145 +351,6 @@
    "type": "Link"
   },
   {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "原辅料与耗材",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "物料档案",
-   "link_count": 0,
-   "link_to": "Item",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "供应商",
-   "link_count": 0,
-   "link_to": "Supplier",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "采购订单",
-   "link_count": 0,
-   "link_to": "Purchase Order",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "采购收货",
-   "link_count": 0,
-   "link_to": "Purchase Receipt",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "打样管理",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "打样单",
-   "link_count": 0,
-   "link_to": "Sample Ticket",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "工艺单",
-   "link_count": 0,
-   "link_to": "Craft Sheet",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "外包管理",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "外包单",
-   "link_count": 0,
-   "link_to": "Outsource Order",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "外包到货单",
-   "link_count": 0,
-   "link_to": "Outsource Receipt",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "生产管理",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "生产跟踪单",
-   "link_count": 0,
-   "link_to": "Production Ticket",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "库存设置",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
@@ -290,7 +408,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "售后管理",
+   "label": "8. 辅助生产",
    "link_count": 0,
    "onboard": 0,
    "type": "Card Break"
@@ -299,28 +417,9 @@
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "售后工单",
+   "label": "生产跟踪单",
    "link_count": 0,
-   "link_to": "After Sales Ticket",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "渠道管理",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "渠道店铺",
-   "link_count": 0,
-   "link_to": "Channel Store",
+   "link_to": "Production Ticket",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -329,9 +428,20 @@
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "订单同步批次",
+   "label": "物料清单",
    "link_count": 0,
-   "link_to": "Order Sync Batch",
+   "link_to": "BOM",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "生产工单",
+   "link_count": 0,
+   "link_to": "Work Order",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
