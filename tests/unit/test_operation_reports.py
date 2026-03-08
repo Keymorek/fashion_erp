@@ -15,7 +15,7 @@ class TestOperationReports(unittest.TestCase):
 
     def test_style_inventory_overview_returns_rows_and_summary(self):
         module = self.env.load_module(
-            "fashion_erp.stock.report.style_inventory_overview.style_inventory_overview"
+            "fashion_erp.fashion_stock.report.style_inventory_overview.style_inventory_overview"
         )
         self.env.db.sql_result = [
             {
@@ -47,7 +47,7 @@ class TestOperationReports(unittest.TestCase):
 
     def test_material_supply_overview_flattens_order_supply_rows(self):
         module = self.env.load_module(
-            "fashion_erp.stock.report.material_supply_overview.material_supply_overview"
+            "fashion_erp.fashion_stock.report.material_supply_overview.material_supply_overview"
         )
 
         def get_all(doctype, **kwargs):
@@ -69,7 +69,7 @@ class TestOperationReports(unittest.TestCase):
         self.env.get_all_handler = get_all
 
         with patch(
-            "fashion_erp.stock.report.material_supply_overview.material_supply_overview.get_outsource_supply_summary"
+            "fashion_erp.fashion_stock.report.material_supply_overview.material_supply_overview.get_outsource_supply_summary"
         ) as mocked_summary:
             mocked_summary.return_value = {
                 "rows": [
@@ -99,7 +99,7 @@ class TestOperationReports(unittest.TestCase):
 
     def test_outsource_receipt_overview_aggregates_header_rows(self):
         module = self.env.load_module(
-            "fashion_erp.stock.report.outsource_receipt_overview.outsource_receipt_overview"
+            "fashion_erp.fashion_stock.report.outsource_receipt_overview.outsource_receipt_overview"
         )
 
         def get_all(doctype, **kwargs):
@@ -140,7 +140,7 @@ class TestOperationReports(unittest.TestCase):
 
     def test_sales_fulfillment_overview_returns_sql_rows(self):
         module = self.env.load_module(
-            "fashion_erp.stock.report.sales_fulfillment_overview.sales_fulfillment_overview"
+            "fashion_erp.fashion_stock.report.sales_fulfillment_overview.sales_fulfillment_overview"
         )
         self.env.db.sql_result = [
             {
@@ -174,7 +174,7 @@ class TestOperationReports(unittest.TestCase):
 
     def test_after_sales_overview_returns_sql_rows(self):
         module = self.env.load_module(
-            "fashion_erp.stock.report.after_sales_overview.after_sales_overview"
+            "fashion_erp.fashion_stock.report.after_sales_overview.after_sales_overview"
         )
         self.env.db.sql_result = [
             {

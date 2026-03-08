@@ -16,7 +16,7 @@ class TestSeedAndSkuFlow(unittest.TestCase):
         self.env.cleanup()
 
     def test_seed_stock_master_data_is_idempotent(self):
-        module = self.env.load_module("fashion_erp.stock.services.stock_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.stock_service")
         store: dict[tuple[str, str], FakeDoc] = {}
 
         def exists(doctype: str, name: str) -> bool:

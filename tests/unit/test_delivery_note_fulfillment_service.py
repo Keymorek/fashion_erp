@@ -42,7 +42,7 @@ class TestDeliveryNoteFulfillmentService(unittest.TestCase):
         self.env.cleanup()
 
     def test_validate_delivery_note_fulfillment_applies_defaults_and_summary(self):
-        module = self.env.load_module("fashion_erp.stock.services.delivery_note_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.delivery_note_fulfillment_service")
         doc = FakeDoc(
             name="DN-001",
             set_warehouse="WH-FG",
@@ -78,7 +78,7 @@ class TestDeliveryNoteFulfillmentService(unittest.TestCase):
         self.assertEqual(doc.fulfillment_consumables[0].estimated_amount, 3.0)
 
     def test_validate_delivery_note_fulfillment_reuses_cached_item_and_warehouse_lookups(self):
-        module = self.env.load_module("fashion_erp.stock.services.delivery_note_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.delivery_note_fulfillment_service")
         lookup_counter = Counter()
         original_get_value = self.env.db.get_value
 
@@ -147,7 +147,7 @@ class TestDeliveryNoteFulfillmentService(unittest.TestCase):
         self.assertEqual(exists_counter[("Warehouse", "WH-PACK")], 1)
 
     def test_validate_delivery_note_fulfillment_rejects_non_consumable_item(self):
-        module = self.env.load_module("fashion_erp.stock.services.delivery_note_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.delivery_note_fulfillment_service")
         doc = FakeDoc(
             name="DN-002",
             set_warehouse="WH-FG",
@@ -174,7 +174,7 @@ class TestDeliveryNoteFulfillmentService(unittest.TestCase):
             module.validate_delivery_note_fulfillment(doc)
 
     def test_validate_delivery_note_fulfillment_rejects_negative_manual_logistics_fee(self):
-        module = self.env.load_module("fashion_erp.stock.services.delivery_note_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.delivery_note_fulfillment_service")
         doc = FakeDoc(
             name="DN-005",
             set_warehouse="WH-FG",
@@ -191,7 +191,7 @@ class TestDeliveryNoteFulfillmentService(unittest.TestCase):
             module.validate_delivery_note_fulfillment(doc)
 
     def test_prepare_delivery_note_fulfillment_stock_entry_creates_draft_and_backfills_ref(self):
-        module = self.env.load_module("fashion_erp.stock.services.delivery_note_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.delivery_note_fulfillment_service")
         self.env.meta_fields["Stock Entry"] = {
             "purpose",
             "stock_entry_type",
@@ -272,7 +272,7 @@ class TestDeliveryNoteFulfillmentService(unittest.TestCase):
         self.assertEqual(created_docs[0].items[0].qty, 2)
 
     def test_prepare_delivery_note_fulfillment_stock_entry_blocks_duplicate_reference(self):
-        module = self.env.load_module("fashion_erp.stock.services.delivery_note_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.delivery_note_fulfillment_service")
         self.env.db.exists_map[("Stock Entry", "STE-EXISTS-001")] = True
         delivery_note = FakeDoc(
             doctype="Delivery Note",
@@ -304,7 +304,7 @@ class TestDeliveryNoteFulfillmentService(unittest.TestCase):
             module.prepare_delivery_note_fulfillment_stock_entry("DN-004")
 
     def test_get_delivery_note_fulfillment_cost_summary_aggregates_submitted_delivery_notes(self):
-        module = self.env.load_module("fashion_erp.stock.services.delivery_note_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.delivery_note_fulfillment_service")
         captured = {}
 
         def get_all(doctype, **kwargs):

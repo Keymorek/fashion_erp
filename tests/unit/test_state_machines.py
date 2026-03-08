@@ -16,7 +16,7 @@ class TestStateMachines(unittest.TestCase):
         self.env.cleanup()
 
     def test_outsource_order_happy_path(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_service")
         doc = FakeDoc(
             name="WB-001",
             order_no="WB-001",
@@ -44,7 +44,7 @@ class TestStateMachines(unittest.TestCase):
         self.assertEqual(len(doc.save_calls), 3)
 
     def test_outsource_receipt_happy_path(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_receipt_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_receipt_service")
         doc = FakeDoc(
             name="DH-001",
             receipt_no="DH-001",
@@ -94,7 +94,7 @@ class TestStateMachines(unittest.TestCase):
         )
 
     def test_after_sales_refund_workflow_and_close_guards(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         refund_doc = FakeDoc(
             name="TK-001",
             ticket_no="TK-001",

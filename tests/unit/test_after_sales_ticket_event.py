@@ -15,7 +15,7 @@ class TestAfterSalesTicketEvent(unittest.TestCase):
         self.env.cleanup()
 
     def test_sync_linked_sales_orders_after_sales_status_updates_original_order(self):
-        module = self.env.load_module("fashion_erp.stock.events.after_sales_ticket")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.after_sales_ticket")
 
         original_order = FakeDoc(
             name="SO-001",
@@ -80,7 +80,7 @@ class TestAfterSalesTicketEvent(unittest.TestCase):
         self.assertEqual(replacement_order.save_calls, [])
 
     def test_collect_related_sales_orders_batches_sales_order_item_parent_queries(self):
-        module = self.env.load_module("fashion_erp.stock.events.after_sales_ticket")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.after_sales_ticket")
         ticket = FakeDoc(
             name="TK-002",
             sales_order="SO-DIRECT-001",
@@ -122,7 +122,7 @@ class TestAfterSalesTicketEvent(unittest.TestCase):
         self.assertEqual(get_all_counter["Sales Order Item"], 1)
 
     def test_sync_linked_sales_orders_after_sales_status_batches_sales_order_existence_queries(self):
-        module = self.env.load_module("fashion_erp.stock.events.after_sales_ticket")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.after_sales_ticket")
         get_all_counter = Counter()
         original_order = FakeDoc(
             name="SO-001",

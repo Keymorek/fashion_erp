@@ -8,7 +8,7 @@ from fashion_erp.garment_mfg.services.production_service import (
     PRODUCTION_STAGE_INDEX,
     PRODUCTION_STAGE_OPTIONS,
 )
-from fashion_erp.stock.report.common import (
+from fashion_erp.fashion_stock.report.common import (
     is_checked,
     make_summary_item,
     normalize_report_filters,

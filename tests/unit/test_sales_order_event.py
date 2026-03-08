@@ -15,7 +15,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.env.cleanup()
 
     def test_validate_sales_order_channel_context_syncs_channel_from_store(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Channel Store", "STORE-01")] = True
         self.env.db.value_map[("Channel Store", "STORE-01", "channel")] = "抖音"
         self.env.get_all_handler = lambda *args, **kwargs: []
@@ -35,7 +35,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.assertEqual(doc.fulfillment_status, "待配货")
 
     def test_validate_sales_order_channel_context_rejects_duplicate_external_order(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Channel Store", "STORE-01")] = True
         self.env.db.value_map[("Channel Store", "STORE-01", "channel")] = "抖音"
         self.env.get_all_handler = lambda doctype, **kwargs: (
@@ -54,7 +54,7 @@ class TestSalesOrderEvent(unittest.TestCase):
             module.validate_sales_order_channel_context(doc)
 
     def test_validate_sales_order_channel_context_allows_after_sales_replacement(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Channel Store", "STORE-01")] = True
         self.env.db.value_map[("Channel Store", "STORE-01", "channel")] = "抖音"
         self.env.get_all_handler = lambda doctype, **kwargs: (
@@ -74,7 +74,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.assertEqual(doc.channel, "抖音")
 
     def test_validate_sales_order_channel_context_requires_store_when_external_id_present(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.get_all_handler = lambda *args, **kwargs: []
         doc = FakeDoc(
             name="SO-001",
@@ -89,7 +89,7 @@ class TestSalesOrderEvent(unittest.TestCase):
             module.validate_sales_order_channel_context(doc)
 
     def test_validate_sales_order_channel_context_initializes_item_fulfillment_status(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Channel Store", "STORE-01")] = True
         self.env.db.value_map[("Channel Store", "STORE-01", "channel")] = "抖音"
         self.env.get_all_handler = lambda *args, **kwargs: []
@@ -112,7 +112,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.assertEqual(doc.items[1].fulfillment_status, "待处理")
 
     def test_validate_sales_order_channel_context_aggregates_manual_progress(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Channel Store", "STORE-01")] = True
         self.env.db.value_map[("Channel Store", "STORE-01", "channel")] = "抖音"
         self.env.get_all_handler = lambda *args, **kwargs: []
@@ -135,7 +135,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.assertEqual(doc.items[1].fulfillment_status, "待发货")
 
     def test_validate_sales_order_channel_context_marks_partial_shipment(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Channel Store", "STORE-01")] = True
         self.env.db.value_map[("Channel Store", "STORE-01", "channel")] = "抖音"
         self.env.get_all_handler = lambda *args, **kwargs: []
@@ -158,7 +158,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.assertEqual(doc.items[1].fulfillment_status, "已发货")
 
     def test_validate_sales_order_channel_context_marks_after_sales_items_in_progress(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Channel Store", "STORE-01")] = True
         self.env.db.value_map[("Channel Store", "STORE-01", "channel")] = "抖音"
 
@@ -191,7 +191,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.assertEqual(doc.items[1].fulfillment_status, "已发货")
 
     def test_validate_sales_order_channel_context_marks_after_sales_items_closed(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Channel Store", "STORE-01")] = True
         self.env.db.value_map[("Channel Store", "STORE-01", "channel")] = "抖音"
 
@@ -220,7 +220,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.assertEqual(doc.items[0].fulfillment_status, "已关闭")
 
     def test_validate_sales_order_channel_context_marks_completed_and_cancelled(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Channel Store", "STORE-01")] = True
         self.env.db.value_map[("Channel Store", "STORE-01", "channel")] = "抖音"
         self.env.get_all_handler = lambda *args, **kwargs: []
@@ -257,7 +257,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.assertEqual(cancelled_doc.items[0].fulfillment_status, "已取消")
 
     def test_sync_after_sales_replacement_order_backfills_ticket(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.value_map[
             (
                 "After Sales Ticket",
@@ -292,7 +292,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         mocked_sync.assert_not_called()
 
     def test_sync_after_sales_replacement_order_skips_get_doc_when_ticket_already_linked(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.value_map[
             (
                 "After Sales Ticket",
@@ -334,7 +334,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         self.assertEqual(self.env.db.set_value_calls, [])
 
     def test_sync_after_sales_replacement_order_uses_full_sync_when_replacement_is_completed(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.value_map[
             (
                 "After Sales Ticket",
@@ -367,7 +367,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         )
 
     def test_sync_after_sales_replacement_order_uses_full_sync_when_replacement_is_canceled(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.value_map[
             (
                 "After Sales Ticket",
@@ -400,7 +400,7 @@ class TestSalesOrderEvent(unittest.TestCase):
         )
 
     def test_sync_linked_sales_orders_fulfillment_status_updates_linked_orders(self):
-        module = self.env.load_module("fashion_erp.stock.events.sales_order")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.sales_order")
         self.env.db.exists_map[("Sales Order", "SO-001")] = True
         sales_order = FakeDoc(
             name="SO-001",

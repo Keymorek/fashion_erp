@@ -14,7 +14,7 @@ class TestCostReports(unittest.TestCase):
 
     def test_outsource_estimated_cost_analysis_returns_progress_and_amounts(self):
         module = self.env.load_module(
-            "fashion_erp.stock.report.outsource_estimated_cost_analysis.outsource_estimated_cost_analysis"
+            "fashion_erp.fashion_stock.report.outsource_estimated_cost_analysis.outsource_estimated_cost_analysis"
         )
 
         def get_all(doctype, **kwargs):
@@ -47,7 +47,7 @@ class TestCostReports(unittest.TestCase):
 
     def test_material_procurement_cost_analysis_returns_open_amount(self):
         module = self.env.load_module(
-            "fashion_erp.stock.report.material_procurement_cost_analysis.material_procurement_cost_analysis"
+            "fashion_erp.fashion_stock.report.material_procurement_cost_analysis.material_procurement_cost_analysis"
         )
         self.env.db.sql_result = [
             {
@@ -81,7 +81,7 @@ class TestCostReports(unittest.TestCase):
 
     def test_fulfillment_cost_analysis_returns_cost_per_unit(self):
         module = self.env.load_module(
-            "fashion_erp.stock.report.fulfillment_cost_analysis.fulfillment_cost_analysis"
+            "fashion_erp.fashion_stock.report.fulfillment_cost_analysis.fulfillment_cost_analysis"
         )
         self.env.db.sql_result = [
             {

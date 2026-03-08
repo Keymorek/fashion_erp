@@ -16,7 +16,7 @@ class TestSupplyService(unittest.TestCase):
         self.env.cleanup()
 
     def test_validate_supply_purchase_receipt_backfills_outsource_context_from_purchase_order(self):
-        module = self.env.load_module("fashion_erp.stock.services.supply_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.supply_service")
 
         self.env.db.exists_map.update(
             {
@@ -77,7 +77,7 @@ class TestSupplyService(unittest.TestCase):
         self.assertEqual(row.warehouse, "WH-RAW")
 
     def test_sync_outsource_supply_context_rejects_item_not_in_order_materials(self):
-        module = self.env.load_module("fashion_erp.stock.services.supply_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.supply_service")
         self.env.get_cached_doc_handler = lambda doctype, name: SimpleNamespace(
             order_status="已下单",
             style="ST-001",
@@ -98,7 +98,7 @@ class TestSupplyService(unittest.TestCase):
             module._sync_outsource_supply_context(row, "面料", item_label="采购明细")
 
     def test_validate_supply_purchase_receipt_reuses_cached_item_po_row_and_sample_ticket_queries(self):
-        module = self.env.load_module("fashion_erp.stock.services.supply_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.supply_service")
         self.env.db.exists_map.update(
             {
                 ("Supplier", "SUP-001"): True,

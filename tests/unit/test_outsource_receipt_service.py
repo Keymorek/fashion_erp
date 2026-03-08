@@ -41,7 +41,7 @@ class TestOutsourceReceiptService(unittest.TestCase):
         self.env.cleanup()
 
     def test_normalize_items_allows_shortage_only_rows_and_builds_exception_summary(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_receipt_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_receipt_service")
         doc = SimpleNamespace(
             style="ST-001",
             color_code="BLK",
@@ -100,7 +100,7 @@ class TestOutsourceReceiptService(unittest.TestCase):
         self.assertEqual(doc.exception_summary, "短装 2.0；错色 3.0；次品 1.0")
 
     def test_normalize_items_rejects_color_mismatch_without_wrong_color_qty(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_receipt_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_receipt_service")
         doc = SimpleNamespace(
             style="ST-001",
             color_code="BLK",
@@ -131,7 +131,7 @@ class TestOutsourceReceiptService(unittest.TestCase):
             module._normalize_items(doc)
 
     def test_validate_qc_result_completion_requires_full_allocation(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_receipt_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_receipt_service")
         doc = SimpleNamespace(
             items=[
                 SimpleNamespace(
@@ -149,7 +149,7 @@ class TestOutsourceReceiptService(unittest.TestCase):
             module._validate_qc_result_completion(doc)
 
     def test_build_final_stock_entry_items_splits_qc_results_by_target_status(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_receipt_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_receipt_service")
         transition_calls = []
 
         def build_row_payload(doc, row, **kwargs):
@@ -206,7 +206,7 @@ class TestOutsourceReceiptService(unittest.TestCase):
         )
 
     def test_build_qc_stock_entry_items_skips_shortage_only_rows(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_receipt_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_receipt_service")
         transition_calls = []
 
         def build_row_payload(doc, row, **kwargs):
@@ -245,7 +245,7 @@ class TestOutsourceReceiptService(unittest.TestCase):
         )
 
     def test_outsource_receipt_validation_helpers_reuse_cached_order_location_item_and_user_queries(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_receipt_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_receipt_service")
         self.env.db.exists_map.update(
             {
                 ("Item", "FG-BLK-M"): True,

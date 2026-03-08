@@ -22,7 +22,7 @@ class TestSalesOrderFulfillmentService(unittest.TestCase):
         self.env.cleanup()
 
     def test_allocate_pick_and_pack_sales_order(self):
-        module = self.env.load_module("fashion_erp.stock.services.sales_order_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.sales_order_fulfillment_service")
         sales_order = FakeDoc(
             doctype="Sales Order",
             name="SO-001",
@@ -66,7 +66,7 @@ class TestSalesOrderFulfillmentService(unittest.TestCase):
         )
 
     def test_allocate_sales_order_supports_selected_rows(self):
-        module = self.env.load_module("fashion_erp.stock.services.sales_order_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.sales_order_fulfillment_service")
         sales_order = FakeDoc(
             doctype="Sales Order",
             name="SO-002",
@@ -102,7 +102,7 @@ class TestSalesOrderFulfillmentService(unittest.TestCase):
         self.assertEqual(sales_order.items[1].fulfillment_status, "已锁库存")
 
     def test_prepare_sales_order_delivery_note_creates_draft(self):
-        module = self.env.load_module("fashion_erp.stock.services.sales_order_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.sales_order_fulfillment_service")
         self.env.meta_fields["Delivery Note"] = {
             "customer",
             "company",
@@ -201,7 +201,7 @@ class TestSalesOrderFulfillmentService(unittest.TestCase):
         self.assertEqual(created_docs[0].items[1].so_detail, "SOI-002")
 
     def test_prepare_sales_order_delivery_note_requires_pending_rows(self):
-        module = self.env.load_module("fashion_erp.stock.services.sales_order_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.sales_order_fulfillment_service")
         sales_order = FakeDoc(
             doctype="Sales Order",
             name="SO-004",
@@ -226,7 +226,7 @@ class TestSalesOrderFulfillmentService(unittest.TestCase):
             module.prepare_sales_order_delivery_note("SO-004")
 
     def test_sync_sales_order_fulfillment_status_batches_after_sales_ticket_item_queries(self):
-        module = self.env.load_module("fashion_erp.stock.services.sales_order_fulfillment_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.sales_order_fulfillment_service")
         get_all_counter = Counter()
 
         def get_all(doctype, **kwargs):

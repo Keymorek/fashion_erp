@@ -16,7 +16,7 @@ class TestAfterSalesService(unittest.TestCase):
         self.env.cleanup()
 
     def test_determine_after_sales_decision_status_maps_ticket_types(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
 
         self.assertEqual(
             module._determine_after_sales_decision_status(SimpleNamespace(ticket_type="仅退款")),
@@ -32,7 +32,7 @@ class TestAfterSalesService(unittest.TestCase):
         )
 
     def test_validate_items_reuses_cached_sales_order_item_and_item_meta(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         self.env.db.exists_map.update(
             {
                 ("Item", "FG-001"): True,
@@ -146,7 +146,7 @@ class TestAfterSalesService(unittest.TestCase):
         )
 
     def test_build_replacement_sales_order_items_reuses_cached_sales_order_item_rows(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         self.env.meta_fields["Sales Order Item"] = {
             "item_code",
             "qty",
@@ -234,7 +234,7 @@ class TestAfterSalesService(unittest.TestCase):
         )
 
     def test_after_sales_header_sync_reuses_cached_sales_order_and_context_queries(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         self.env.db.value_map.update(
             {
                 (
@@ -325,7 +325,7 @@ class TestAfterSalesService(unittest.TestCase):
         self.assertEqual(lookup_counter[("Warehouse Location", "LOC-01", "warehouse", False)], 1)
 
     def test_after_sales_default_company_and_stock_entry_type_reuse_cached_exists_checks(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         self.env.frappe.defaults = SimpleNamespace(
             get_user_default=lambda key: "COMP-01" if key == "Company" else "",
             get_global_default=lambda _key: "",
@@ -388,7 +388,7 @@ class TestAfterSalesService(unittest.TestCase):
         self.assertEqual(exists_counter[("Stock Entry Type", "Material Receipt")], 1)
 
     def test_approve_after_sales_refund_keeps_ticket_open_until_inventory_is_finalized(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         doc = FakeDoc(
             name="TK-REF-001",
             ticket_no="TK-REF-001",
@@ -426,7 +426,7 @@ class TestAfterSalesService(unittest.TestCase):
         self.assertEqual(doc.logs[-1].action_type, "退款")
 
     def test_close_after_sales_ticket_requires_final_inventory_writeback(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         doc = FakeDoc(
             name="TK-CLOSE-001",
             ticket_no="TK-CLOSE-001",
@@ -460,7 +460,7 @@ class TestAfterSalesService(unittest.TestCase):
                 module.close_after_sales_ticket("TK-CLOSE-001")
 
     def test_close_after_sales_ticket_requires_completed_replacement_order(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         doc = FakeDoc(
             name="TK-CLOSE-REPL-001",
             ticket_no="TK-CLOSE-REPL-001",
@@ -491,7 +491,7 @@ class TestAfterSalesService(unittest.TestCase):
                 module.close_after_sales_ticket("TK-CLOSE-REPL-001")
 
     def test_create_replacement_sales_order_inserts_draft_and_syncs_ticket(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         doc = FakeDoc(
             name="TK-REPL-001",
             ticket_no="TK-REPL-001",
@@ -549,7 +549,7 @@ class TestAfterSalesService(unittest.TestCase):
         )
 
     def test_submit_after_sales_stock_entry_inserts_and_submits_stock_entry(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
 
         class SubmittedStockEntry:
             def __init__(self):
@@ -608,7 +608,7 @@ class TestAfterSalesService(unittest.TestCase):
         )
 
     def test_sync_after_sales_ticket_inventory_closure_reopens_closed_ticket_when_final_entry_is_canceled(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         doc = FakeDoc(
             name="TK-SYNC-001",
             ticket_no="TK-SYNC-001",
@@ -646,7 +646,7 @@ class TestAfterSalesService(unittest.TestCase):
         self.assertEqual(doc.save_calls, [{"ignore_permissions": True, "ignore_version": True}])
 
     def test_sync_after_sales_ticket_replacement_order_auto_closes_when_replacement_is_completed(self):
-        module = self.env.load_module("fashion_erp.stock.services.after_sales_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.after_sales_service")
         doc = FakeDoc(
             name="TK-REPL-SYNC-001",
             ticket_no="TK-REPL-SYNC-001",

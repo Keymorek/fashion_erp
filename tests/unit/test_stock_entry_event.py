@@ -15,7 +15,7 @@ class TestStockEntryEvent(unittest.TestCase):
         self.env.cleanup()
 
     def test_validate_inventory_status_rules_syncs_header_delivery_note_to_rows(self):
-        module = self.env.load_module("fashion_erp.stock.events.stock_entry")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.stock_entry")
         doc = FakeDoc(
             delivery_note="DN-001",
             items=[
@@ -35,7 +35,7 @@ class TestStockEntryEvent(unittest.TestCase):
         self.assertEqual(doc.items[0].delivery_note, "DN-001")
 
     def test_validate_inventory_status_rules_promotes_row_delivery_note_to_header(self):
-        module = self.env.load_module("fashion_erp.stock.events.stock_entry")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.stock_entry")
         doc = FakeDoc(
             delivery_note="",
             items=[
@@ -55,7 +55,7 @@ class TestStockEntryEvent(unittest.TestCase):
         self.assertEqual(doc.delivery_note, "DN-002")
 
     def test_sync_linked_after_sales_ticket_inventory_closure_batches_existing_ticket_queries(self):
-        module = self.env.load_module("fashion_erp.stock.events.stock_entry")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.stock_entry")
         doc = FakeDoc(
             name="STE-001",
             docstatus=1,
@@ -85,7 +85,7 @@ class TestStockEntryEvent(unittest.TestCase):
         )
 
     def test_sync_linked_after_sales_ticket_inventory_closure_uses_cancel_operation(self):
-        module = self.env.load_module("fashion_erp.stock.events.stock_entry")
+        module = self.env.load_module("fashion_erp.fashion_stock.events.stock_entry")
         doc = FakeDoc(
             name="STE-002",
             docstatus=2,

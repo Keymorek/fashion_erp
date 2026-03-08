@@ -16,7 +16,7 @@ class TestOutsourceService(unittest.TestCase):
         self.env.cleanup()
 
     def test_build_purchase_qty_scope_maps_groups_by_item_and_warehouse(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_service")
 
         scope_maps = module._build_purchase_qty_scope_maps(
             [
@@ -38,7 +38,7 @@ class TestOutsourceService(unittest.TestCase):
         self.assertEqual(scope_maps["generic_by_item"], {"FAB-001": 3.0})
 
     def test_get_outsource_supply_summary_uses_legacy_purchase_scope_as_fallback(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_service")
         doc = SimpleNamespace(
             name="WB-001",
             order_no="WB-001",
@@ -84,7 +84,7 @@ class TestOutsourceService(unittest.TestCase):
         self.assertIn("旧采购数据", row["warning"])
 
     def test_normalize_materials_reuses_cached_item_and_location_queries_for_duplicate_rows(self):
-        module = self.env.load_module("fashion_erp.stock.services.outsource_service")
+        module = self.env.load_module("fashion_erp.fashion_stock.services.outsource_service")
         self.env.db.value_map[
             (
                 "Item",
