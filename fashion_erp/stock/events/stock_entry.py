@@ -6,6 +6,7 @@ from fashion_erp.stock.services.stock_service import (
 
 def validate_inventory_status_rules(doc, method=None) -> None:
     header_after_sales_ticket = getattr(doc, "after_sales_ticket", None)
+    header_delivery_note = getattr(doc, "delivery_note", None)
     for row in getattr(doc, "items", []) or []:
         if not header_after_sales_ticket and getattr(row, "after_sales_ticket", None):
             header_after_sales_ticket = row.after_sales_ticket
@@ -14,6 +15,14 @@ def validate_inventory_status_rules(doc, method=None) -> None:
 
         if header_after_sales_ticket and hasattr(row, "after_sales_ticket") and not getattr(row, "after_sales_ticket", None):
             row.after_sales_ticket = header_after_sales_ticket
+
+        if not header_delivery_note and getattr(row, "delivery_note", None):
+            header_delivery_note = row.delivery_note
+            if hasattr(doc, "delivery_note"):
+                doc.delivery_note = header_delivery_note
+
+        if header_delivery_note and hasattr(row, "delivery_note") and not getattr(row, "delivery_note", None):
+            row.delivery_note = header_delivery_note
 
         if not _row_has_inventory_status_context(row):
             continue

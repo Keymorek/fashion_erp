@@ -56,6 +56,7 @@ def autoname_outsource_order(doc) -> None:
 
 
 def validate_outsource_order(doc) -> None:
+    _reset_outsource_validation_cache(doc)
     doc.order_no = normalize_text(doc.order_no)
     doc.style = normalize_text(doc.style)
     doc.style_name = normalize_text(doc.style_name)
@@ -304,13 +305,13 @@ def _validate_links(doc) -> None:
     if not doc.style:
         frappe.throw(_("款号不能为空。"))
 
-    ensure_link_exists("Style", doc.style)
-    ensure_link_exists("Item", doc.item_template)
-    ensure_link_exists("Craft Sheet", doc.craft_sheet)
-    ensure_link_exists("Sample Ticket", doc.sample_ticket)
-    ensure_link_exists("Supplier", doc.supplier)
-    ensure_link_exists("Warehouse", doc.receipt_warehouse)
-    ensure_enabled_link("Color", doc.color)
+    _ensure_cached_link_exists(doc, "Style", doc.style)
+    _ensure_cached_link_exists(doc, "Item", doc.item_template)
+    _ensure_cached_link_exists(doc, "Craft Sheet", doc.craft_sheet)
+    _ensure_cached_link_exists(doc, "Sample Ticket", doc.sample_ticket)
+    _ensure_cached_link_exists(doc, "Supplier", doc.supplier)
+    _ensure_cached_link_exists(doc, "Warehouse", doc.receipt_warehouse)
+    _ensure_cached_enabled_link(doc, "Color", doc.color)
 
 
 def _sync_from_style(doc) -> None:
@@ -466,13 +467,8 @@ def _normalize_materials(doc) -> None:
         if not row.item_code:
             frappe.throw(_("原辅料明细第 {0} 行缺少物料。").format(frappe.bold(row.idx)))
 
-        ensure_link_exists("Item", row.item_code)
-        item_values = frappe.db.get_value(
-            "Item",
-            row.item_code,
-            ["item_name", "item_usage_type", "stock_uom", "supply_warehouse", "default_location"],
-            as_dict=True,
-        ) or {}
+        _ensure_cached_link_exists(doc, "Item", row.item_code)
+        item_values = _get_cached_outsource_item_values(doc, row.item_code)
         row.item_name = normalize_text(item_values.get("item_name")) or row.item_name or row.item_code
         row.item_usage_type = normalize_select(
             item_values.get("item_usage_type"),
@@ -498,12 +494,10 @@ def _normalize_materials(doc) -> None:
         if row.issued_qty_manual > row.planned_qty:
             frappe.throw(_("原辅料明细第 {0} 行的人工登记已发数量不能大于计划用量。").format(frappe.bold(row.idx)))
 
-        ensure_link_exists("Warehouse", row.warehouse)
-        ensure_enabled_link("Warehouse Location", row.default_location)
+        _ensure_cached_link_exists(doc, "Warehouse", row.warehouse)
+        _ensure_cached_enabled_link(doc, "Warehouse Location", row.default_location)
         if row.default_location and row.warehouse:
-            location_warehouse = normalize_text(
-                frappe.db.get_value("Warehouse Location", row.default_location, "warehouse")
-            )
+            location_warehouse = _get_cached_location_warehouse(doc, row.default_location)
             if location_warehouse and location_warehouse != row.warehouse:
                 frappe.throw(
                     _("原辅料明细第 {0} 行的备货库位不属于备货仓库。").format(
@@ -728,6 +722,111 @@ def _resolve_on_hand_qty(
     return sum(flt(by_item_warehouse.get((item_code, warehouse), 0)) for warehouse in warehouses)
 
 
+def _reset_outsource_validation_cache(doc) -> None:
+    cache = {
+        "link_exists": {},
+        "enabled_links": {},
+        "item_values": {},
+        "location_warehouses": {},
+        "craft_sheet_status": {},
+    }
+    flags = getattr(doc, "flags", None)
+    if flags is not None:
+        flags.outsource_validation_cache = cache
+        return
+    doc._outsource_validation_cache = cache
+
+
+def _get_outsource_validation_cache(doc) -> dict[str, dict[object, object]]:
+    flags = getattr(doc, "flags", None)
+    if flags is not None:
+        cache = getattr(flags, "outsource_validation_cache", None)
+        if isinstance(cache, dict):
+            return cache
+    else:
+        cache = getattr(doc, "_outsource_validation_cache", None)
+        if isinstance(cache, dict):
+            return cache
+
+    _reset_outsource_validation_cache(doc)
+    return _get_outsource_validation_cache(doc)
+
+
+def _ensure_cached_link_exists(doc, doctype: str, name: str | None) -> None:
+    normalized_name = normalize_text(name)
+    if not normalized_name:
+        return
+
+    cache = _get_outsource_validation_cache(doc)["link_exists"]
+    cache_key = (doctype, normalized_name)
+    if cache.get(cache_key):
+        return
+
+    ensure_link_exists(doctype, normalized_name)
+    cache[cache_key] = True
+
+
+def _ensure_cached_enabled_link(
+    doc,
+    doctype: str,
+    name: str | None,
+    enabled_field: str = "enabled",
+) -> None:
+    normalized_name = normalize_text(name)
+    if not normalized_name:
+        return
+
+    cache = _get_outsource_validation_cache(doc)["enabled_links"]
+    cache_key = (doctype, normalized_name, enabled_field)
+    if cache.get(cache_key):
+        return
+
+    ensure_enabled_link(doctype, normalized_name, enabled_field)
+    cache[cache_key] = True
+
+
+def _get_cached_outsource_item_values(doc, item_code: str) -> dict[str, object]:
+    normalized_item_code = normalize_text(item_code)
+    if not normalized_item_code:
+        return {}
+
+    cache = _get_outsource_validation_cache(doc)["item_values"]
+    if normalized_item_code not in cache:
+        cache[normalized_item_code] = frappe.db.get_value(
+            "Item",
+            normalized_item_code,
+            ["item_name", "item_usage_type", "stock_uom", "supply_warehouse", "default_location"],
+            as_dict=True,
+        ) or {}
+    return cache[normalized_item_code]
+
+
+def _get_cached_location_warehouse(doc, location_name: str | None) -> str:
+    normalized_location = normalize_text(location_name)
+    if not normalized_location:
+        return ""
+
+    cache = _get_outsource_validation_cache(doc)["location_warehouses"]
+    if normalized_location not in cache:
+        cache[normalized_location] = normalize_text(
+            frappe.db.get_value("Warehouse Location", normalized_location, "warehouse")
+        )
+    return cache[normalized_location]
+
+
+def _get_cached_craft_sheet_status(doc, craft_sheet_name: str | None) -> str:
+    normalized_sheet_name = normalize_text(craft_sheet_name)
+    if not normalized_sheet_name:
+        return ""
+
+    cache = _get_outsource_validation_cache(doc)["craft_sheet_status"]
+    if normalized_sheet_name not in cache:
+        cache[normalized_sheet_name] = normalize_text(
+            frappe.db.get_value("Craft Sheet", normalized_sheet_name, "sheet_status")
+        )
+    return cache[normalized_sheet_name]
+
+
 def _build_empty_supply_summary() -> dict[str, float | int]:
     return {
         "line_count": 0,
@@ -766,7 +865,7 @@ def _normalize_logs(doc) -> None:
             normalize_text(getattr(row, "to_status", None)),
         )
         row.operator = normalize_text(getattr(row, "operator", None)) or frappe.session.user
-        ensure_link_exists("User", row.operator)
+        _ensure_cached_link_exists(doc, "User", row.operator)
         row.note = normalize_text(getattr(row, "note", None))
 
 
@@ -805,7 +904,7 @@ def _ensure_submission_prerequisites(doc) -> None:
     if not doc.craft_sheet:
         frappe.throw(_("下发外包单前必须先关联工艺单。"))
 
-    craft_status = normalize_text(frappe.db.get_value("Craft Sheet", doc.craft_sheet, "sheet_status"))
+    craft_status = _get_cached_craft_sheet_status(doc, doc.craft_sheet)
     if craft_status != "已发布":
         frappe.throw(_("只有已发布的工艺单才能用于外包下单。"))
 

@@ -44,6 +44,7 @@ SUPPLY_ITEM_TYPES = RAW_MATERIAL_ITEM_TYPES | CONSUMABLE_ITEM_TYPES
 
 
 def validate_supply_item(doc) -> None:
+    _reset_supply_validation_cache(doc)
     doc.item_usage_type = normalize_select(
         doc.item_usage_type,
         "物料用途",
@@ -73,6 +74,7 @@ def validate_supply_item(doc) -> None:
 
 
 def validate_supply_purchase_order(doc) -> None:
+    _reset_supply_validation_cache(doc)
     doc.supply_order_type = normalize_select(
         doc.supply_order_type,
         "采购用途",
@@ -80,12 +82,13 @@ def validate_supply_purchase_order(doc) -> None:
         default="原辅料采购",
     )
 
-    supplier_role = _get_supplier_role(getattr(doc, "supplier", None))
+    supplier_role = _get_supplier_role(getattr(doc, "supplier", None), doc=doc)
     _validate_supplier_role(doc.supply_order_type, supplier_role, is_receipt=False)
 
     row_item_types = set()
     for row in doc.items or []:
         item_usage_type = _prepare_supply_row(
+            doc,
             row,
             set_warehouse=None,
             item_label="采购明细",
@@ -114,6 +117,7 @@ def validate_supply_purchase_order(doc) -> None:
 
 
 def validate_supply_purchase_receipt(doc) -> None:
+    _reset_supply_validation_cache(doc)
     doc.supply_receipt_type = normalize_select(
         doc.supply_receipt_type,
         "收货用途",
@@ -121,18 +125,19 @@ def validate_supply_purchase_receipt(doc) -> None:
         default="原辅料收货",
     )
 
-    supplier_role = _get_supplier_role(getattr(doc, "supplier", None))
+    supplier_role = _get_supplier_role(getattr(doc, "supplier", None), doc=doc)
     _validate_supplier_role(doc.supply_receipt_type, supplier_role, is_receipt=True)
 
     header_warehouse = normalize_text(getattr(doc, "set_warehouse", None))
     row_item_types = set()
     for row in doc.items or []:
         item_usage_type = _prepare_supply_row(
+            doc,
             row,
             set_warehouse=header_warehouse,
             item_label="收货明细",
         )
-        _hydrate_supply_row_from_purchase_order(row, item_label="收货明细")
+        _hydrate_supply_row_from_purchase_order(doc, row, item_label="收货明细")
         if getattr(row, "reference_outsource_order", None) and not getattr(row, "supply_context", None):
             row.supply_context = "外包备货"
         row.supply_context = _normalize_supply_context(
@@ -179,13 +184,11 @@ def _apply_item_supply_defaults(doc) -> None:
 
 
 def _validate_item_supply_links(doc) -> None:
-    ensure_link_exists("Warehouse", doc.supply_warehouse)
-    ensure_enabled_link("Warehouse Location", doc.default_location)
+    _ensure_cached_link_exists(doc, "Warehouse", doc.supply_warehouse)
+    _ensure_cached_enabled_link(doc, "Warehouse Location", doc.default_location)
 
     if doc.default_location:
-        location_warehouse = normalize_text(
-            frappe.db.get_value("Warehouse Location", doc.default_location, "warehouse")
-        )
+        location_warehouse = _get_cached_location_warehouse(doc, doc.default_location)
         if doc.supply_warehouse and location_warehouse and location_warehouse != doc.supply_warehouse:
             frappe.throw(
                 _(
@@ -197,7 +200,7 @@ def _validate_item_supply_links(doc) -> None:
             )
 
 
-def _prepare_supply_row(row, *, set_warehouse: str | None, item_label: str) -> str:
+def _prepare_supply_row(doc, row, *, set_warehouse: str | None, item_label: str) -> str:
     row.item_usage_type = normalize_text(getattr(row, "item_usage_type", None))
     row.reference_style = normalize_text(getattr(row, "reference_style", None))
     row.reference_outsource_order = normalize_text(getattr(row, "reference_outsource_order", None))
@@ -210,14 +213,9 @@ def _prepare_supply_row(row, *, set_warehouse: str | None, item_label: str) -> s
     if not item_code:
         return ""
 
-    ensure_link_exists("Item", item_code)
+    _ensure_cached_link_exists(doc, "Item", item_code)
 
-    item_values = frappe.db.get_value(
-        "Item",
-        item_code,
-        ["item_usage_type", "supply_warehouse"],
-        as_dict=True,
-    ) or {}
+    item_values = _get_cached_supply_item_values(doc, item_code)
 
     item_usage_type = normalize_select(
         item_values.get("item_usage_type"),
@@ -233,22 +231,17 @@ def _prepare_supply_row(row, *, set_warehouse: str | None, item_label: str) -> s
         current_warehouse = normalize_text(getattr(row, "warehouse", None))
         row.warehouse = current_warehouse or supply_warehouse or set_warehouse or ""
 
-    ensure_link_exists("Outsource Order", row.reference_outsource_order)
-    _sync_reference_style_from_sample_ticket(row, item_label=item_label)
+    _ensure_cached_link_exists(doc, "Outsource Order", row.reference_outsource_order)
+    _sync_reference_style_from_sample_ticket(doc, row, item_label=item_label)
     return item_usage_type
 
 
-def _hydrate_supply_row_from_purchase_order(row, *, item_label: str) -> None:
-    source_row_name = _resolve_purchase_order_item_reference(row)
+def _hydrate_supply_row_from_purchase_order(doc, row, *, item_label: str) -> None:
+    source_row_name = _resolve_purchase_order_item_reference(doc, row)
     if not source_row_name:
         return
 
-    source_row = frappe.db.get_value(
-        "Purchase Order Item",
-        source_row_name,
-        ["reference_style", "reference_outsource_order", "reference_sample_ticket", "supply_context"],
-        as_dict=True,
-    ) or {}
+    source_row = _get_cached_purchase_order_item_values(doc, source_row_name)
 
     for fieldname in ("reference_style", "reference_outsource_order", "reference_sample_ticket", "supply_context"):
         current_value = normalize_text(getattr(row, fieldname, None))
@@ -256,26 +249,24 @@ def _hydrate_supply_row_from_purchase_order(row, *, item_label: str) -> None:
         if not current_value and source_value:
             setattr(row, fieldname, source_value)
 
-    ensure_link_exists("Outsource Order", row.reference_outsource_order)
-    _sync_reference_style_from_sample_ticket(row, item_label=item_label)
+    _ensure_cached_link_exists(doc, "Outsource Order", row.reference_outsource_order)
+    _sync_reference_style_from_sample_ticket(doc, row, item_label=item_label)
 
     if row.reference_outsource_order and not row.supply_context:
         row.supply_context = "外包备货"
 
 
-def _sync_reference_style_from_sample_ticket(row, *, item_label: str) -> None:
+def _sync_reference_style_from_sample_ticket(doc, row, *, item_label: str) -> None:
     row.reference_style = normalize_text(getattr(row, "reference_style", None))
     row.reference_sample_ticket = normalize_text(getattr(row, "reference_sample_ticket", None))
 
-    ensure_link_exists("Style", row.reference_style)
-    ensure_link_exists("Sample Ticket", row.reference_sample_ticket)
+    _ensure_cached_link_exists(doc, "Style", row.reference_style)
+    _ensure_cached_link_exists(doc, "Sample Ticket", row.reference_sample_ticket)
 
     if not row.reference_sample_ticket:
         return
 
-    sample_style = normalize_text(
-        frappe.db.get_value("Sample Ticket", row.reference_sample_ticket, "style")
-    )
+    sample_style = _get_cached_sample_ticket_style(doc, row.reference_sample_ticket)
     if not row.reference_style and sample_style:
         row.reference_style = sample_style
         return
@@ -292,12 +283,12 @@ def _sync_reference_style_from_sample_ticket(row, *, item_label: str) -> None:
         )
 
 
-def _resolve_purchase_order_item_reference(row) -> str:
+def _resolve_purchase_order_item_reference(doc, row) -> str:
     source_row_name = normalize_text(getattr(row, "purchase_order_item", None)) or normalize_text(
         getattr(row, "po_detail", None)
     )
     if source_row_name:
-        ensure_link_exists("Purchase Order Item", source_row_name)
+        _ensure_cached_link_exists(doc, "Purchase Order Item", source_row_name)
         return source_row_name
 
     purchase_order = normalize_text(getattr(row, "purchase_order", None))
@@ -305,19 +296,14 @@ def _resolve_purchase_order_item_reference(row) -> str:
     if not purchase_order or not item_code:
         return ""
 
-    ensure_link_exists("Purchase Order", purchase_order)
+    _ensure_cached_link_exists(doc, "Purchase Order", purchase_order)
 
     filters = {"parent": purchase_order, "item_code": item_code}
     warehouse = normalize_text(getattr(row, "warehouse", None))
     if warehouse:
         filters["warehouse"] = warehouse
 
-    matches = frappe.get_all(
-        "Purchase Order Item",
-        filters=filters,
-        pluck="name",
-        limit_page_length=2,
-    )
+    matches = _get_cached_purchase_order_item_matches(doc, filters)
     return matches[0] if len(matches) == 1 else ""
 
 
@@ -486,6 +472,138 @@ def _validate_supply_doc_type_mix(
         frappe.throw(_("{0}用途为包装耗材时，不允许混入面料或辅料。").format(label))
 
 
+def _reset_supply_validation_cache(doc) -> None:
+    cache = {
+        "link_exists": {},
+        "enabled_links": {},
+        "item_values": {},
+        "purchase_order_item_values": {},
+        "purchase_order_item_matches": {},
+        "sample_ticket_styles": {},
+        "supplier_roles": {},
+        "location_warehouses": {},
+    }
+    flags = getattr(doc, "flags", None)
+    if flags is not None:
+        flags.supply_validation_cache = cache
+        return
+    doc._supply_validation_cache = cache
+
+
+def _get_supply_validation_cache(doc) -> dict[str, dict[object, object]]:
+    flags = getattr(doc, "flags", None)
+    if flags is not None:
+        cache = getattr(flags, "supply_validation_cache", None)
+        if isinstance(cache, dict):
+            return cache
+    else:
+        cache = getattr(doc, "_supply_validation_cache", None)
+        if isinstance(cache, dict):
+            return cache
+
+    _reset_supply_validation_cache(doc)
+    return _get_supply_validation_cache(doc)
+
+
+def _ensure_cached_link_exists(doc, doctype: str, name: str | None) -> None:
+    normalized_name = normalize_text(name)
+    if not normalized_name:
+        return
+
+    cache = _get_supply_validation_cache(doc)["link_exists"]
+    cache_key = (doctype, normalized_name)
+    if cache.get(cache_key):
+        return
+
+    ensure_link_exists(doctype, normalized_name)
+    cache[cache_key] = True
+
+
+def _ensure_cached_enabled_link(doc, doctype: str, name: str | None, enabled_field: str = "enabled") -> None:
+    normalized_name = normalize_text(name)
+    if not normalized_name:
+        return
+
+    cache = _get_supply_validation_cache(doc)["enabled_links"]
+    cache_key = (doctype, normalized_name, enabled_field)
+    if cache.get(cache_key):
+        return
+
+    ensure_enabled_link(doctype, normalized_name, enabled_field)
+    cache[cache_key] = True
+
+
+def _get_cached_supply_item_values(doc, item_code: str) -> dict[str, object]:
+    normalized_item_code = normalize_text(item_code)
+    if not normalized_item_code:
+        return {}
+
+    cache = _get_supply_validation_cache(doc)["item_values"]
+    if normalized_item_code not in cache:
+        cache[normalized_item_code] = frappe.db.get_value(
+            "Item",
+            normalized_item_code,
+            ["item_usage_type", "supply_warehouse"],
+            as_dict=True,
+        ) or {}
+    return cache[normalized_item_code]
+
+
+def _get_cached_purchase_order_item_values(doc, source_row_name: str) -> dict[str, object]:
+    normalized_row_name = normalize_text(source_row_name)
+    if not normalized_row_name:
+        return {}
+
+    cache = _get_supply_validation_cache(doc)["purchase_order_item_values"]
+    if normalized_row_name not in cache:
+        cache[normalized_row_name] = frappe.db.get_value(
+            "Purchase Order Item",
+            normalized_row_name,
+            ["reference_style", "reference_outsource_order", "reference_sample_ticket", "supply_context"],
+            as_dict=True,
+        ) or {}
+    return cache[normalized_row_name]
+
+
+def _get_cached_purchase_order_item_matches(doc, filters: dict[str, object]) -> list[str]:
+    cache_key = tuple(sorted((key, normalize_text(value)) for key, value in filters.items()))
+    cache = _get_supply_validation_cache(doc)["purchase_order_item_matches"]
+    if cache_key not in cache:
+        cache[cache_key] = frappe.get_all(
+            "Purchase Order Item",
+            filters=filters,
+            pluck="name",
+            limit_page_length=2,
+        )
+    return cache[cache_key]
+
+
+def _get_cached_sample_ticket_style(doc, sample_ticket_name: str | None) -> str:
+    normalized_ticket = normalize_text(sample_ticket_name)
+    if not normalized_ticket:
+        return ""
+
+    cache = _get_supply_validation_cache(doc)["sample_ticket_styles"]
+    if normalized_ticket not in cache:
+        cache[normalized_ticket] = normalize_text(
+            frappe.db.get_value("Sample Ticket", normalized_ticket, "style")
+        )
+    return cache[normalized_ticket]
+
+
+def _get_cached_location_warehouse(doc, location_name: str | None) -> str:
+    normalized_location = normalize_text(location_name)
+    if not normalized_location:
+        return ""
+
+    cache = _get_supply_validation_cache(doc)["location_warehouses"]
+    if normalized_location not in cache:
+        cache[normalized_location] = normalize_text(
+            frappe.db.get_value("Warehouse Location", normalized_location, "warehouse")
+        )
+    return cache[normalized_location]
+
+
 def _validate_supplier_role(header_type: str, supplier_role: str, *, is_receipt: bool) -> None:
     if not supplier_role:
         return
@@ -510,10 +628,22 @@ def _validate_supplier_role(header_type: str, supplier_role: str, *, is_receipt:
         )
 
 
-def _get_supplier_role(supplier_name: str | None) -> str:
+def _get_supplier_role(supplier_name: str | None, *, doc=None) -> str:
     supplier_name = normalize_text(supplier_name)
     if not supplier_name:
         return ""
+    if doc is not None:
+        _ensure_cached_link_exists(doc, "Supplier", supplier_name)
+        cache = _get_supply_validation_cache(doc)["supplier_roles"]
+        if supplier_name not in cache:
+            cache[supplier_name] = normalize_select(
+                frappe.db.get_value("Supplier", supplier_name, "supplier_role"),
+                "供应商角色",
+                SUPPLIER_ROLES,
+                default="综合供应商",
+            )
+        return cache[supplier_name]
+
     ensure_link_exists("Supplier", supplier_name)
     return normalize_select(
         frappe.db.get_value("Supplier", supplier_name, "supplier_role"),

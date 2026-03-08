@@ -365,7 +365,12 @@ def get_size_range_summary(size_system: str | None) -> str:
     return f"{size_codes[0]}-{size_codes[-1]}"
 
 
-def get_style_variant_generation_issues(style_doc) -> list[str]:
+def get_style_variant_generation_issues(
+    style_doc,
+    *,
+    enabled_size_codes: list[str] | None = None,
+    brand_abbreviation: str | None = None,
+) -> list[str]:
     issues = []
 
     if not style_doc.brand:
@@ -373,23 +378,33 @@ def get_style_variant_generation_issues(style_doc) -> list[str]:
     else:
         if not has_brand_abbreviation_field():
             issues.append(_("品牌上缺少品牌简称字段，请先应用本应用的字段配置。"))
-        elif not get_brand_abbreviation(style_doc.brand):
-            issues.append(
-                _("生成单品编码前，品牌{0}必须先维护品牌简称。").format(
-                    frappe.bold(style_doc.brand)
+        else:
+            brand_abbr = brand_abbreviation
+            if brand_abbr is None:
+                brand_abbr = get_brand_abbreviation(style_doc.brand)
+            if brand_abbr:
+                brand_abbr = normalize_business_code(brand_abbr, "品牌简称")
+            if not brand_abbr:
+                issues.append(
+                    _("生成单品编码前，品牌{0}必须先维护品牌简称。").format(
+                        frappe.bold(style_doc.brand)
+                    )
                 )
-            )
 
     if not style_doc.size_system:
         issues.append(_("尺码体系不能为空。"))
     elif not is_enabled_doc("Size System", style_doc.size_system):
         issues.append(_("尺码体系{0}已停用。").format(frappe.bold(style_doc.size_system)))
-    elif not get_enabled_size_codes(style_doc.size_system):
-        issues.append(
-            _("尺码体系{0}下没有启用的尺码编码。").format(
-                frappe.bold(style_doc.size_system)
+    else:
+        size_codes = enabled_size_codes
+        if size_codes is None:
+            size_codes = get_enabled_size_codes(style_doc.size_system)
+        if not size_codes:
+            issues.append(
+                _("尺码体系{0}下没有启用的尺码编码。").format(
+                    frappe.bold(style_doc.size_system)
+                )
             )
-        )
 
     if not style_doc.item_group:
         issues.append(_("生成单品编码前必须先选择物料组。"))

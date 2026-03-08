@@ -30,6 +30,7 @@ class FakeDB:
         self.exists_map: dict[tuple[str, str], bool] = {}
         self.value_map: dict[tuple[object, ...], object] = {}
         self.sql_result: list[dict[str, object]] = []
+        self.sql_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
         self.set_value_calls: list[tuple[object, ...]] = []
 
     def exists(self, doctype: str, name: str) -> bool:
@@ -47,6 +48,7 @@ class FakeDB:
         return None
 
     def sql(self, *_args, **_kwargs):
+        self.sql_calls.append((_args, _kwargs))
         return _clone(self.sql_result)
 
     def set_value(self, *args, **kwargs):
@@ -59,6 +61,38 @@ class FakeMeta:
 
     def has_field(self, fieldname: str) -> bool:
         return fieldname in self._fields
+
+
+class FakeDoc(SimpleNamespace):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        if not hasattr(self, "flags"):
+            self.flags = SimpleNamespace()
+        if not hasattr(self, "logs"):
+            self.logs = []
+        self.save_calls: list[dict[str, object]] = []
+        self.insert_calls: list[dict[str, object]] = []
+
+    def append(self, fieldname: str, value):
+        rows = list(getattr(self, fieldname, []) or [])
+        row = AttrDict(copy.deepcopy(value)) if isinstance(value, dict) else value
+        rows.append(row)
+        setattr(self, fieldname, rows)
+        return row
+
+    def save(self, **kwargs):
+        self.save_calls.append(kwargs)
+        return self
+
+    def insert(self, **kwargs):
+        self.insert_calls.append(kwargs)
+        return self
+
+    def get(self, fieldname: str, default=None):
+        return getattr(self, fieldname, default)
+
+    def set(self, fieldname: str, value):
+        setattr(self, fieldname, value)
 
 
 def _freeze_field(fieldname):

@@ -24,6 +24,12 @@
   "color_name",
   "color_code",
   "total_received_qty",
+  "exception_row_count",
+  "total_shortage_qty",
+  "total_wrong_color_qty",
+  "total_wrong_size_qty",
+  "total_defective_qty",
+  "exception_summary",
   "qc_stock_entry",
   "final_stock_entry",
   "qc_completed_at",
@@ -178,6 +184,47 @@
    "fieldname": "total_received_qty",
    "fieldtype": "Float",
    "label": "本单到货数量",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "exception_row_count",
+   "fieldtype": "Int",
+   "label": "异常行数",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_shortage_qty",
+   "fieldtype": "Float",
+   "label": "短装数量",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_wrong_color_qty",
+   "fieldtype": "Float",
+   "label": "错色数量",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_wrong_size_qty",
+   "fieldtype": "Float",
+   "label": "错码数量",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_defective_qty",
+   "fieldtype": "Float",
+   "label": "次品数量",
+   "read_only": 1
+  },
+  {
+   "fieldname": "exception_summary",
+   "fieldtype": "Small Text",
+   "label": "异常汇总",
    "read_only": 1
   },
   {

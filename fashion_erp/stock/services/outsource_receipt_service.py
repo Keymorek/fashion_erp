@@ -59,6 +59,7 @@ def autoname_outsource_receipt(doc) -> None:
 
 
 def validate_outsource_receipt(doc) -> None:
+    _reset_outsource_receipt_validation_cache(doc)
     doc.receipt_no = normalize_text(doc.receipt_no)
     doc.outsource_order = normalize_text(doc.outsource_order)
     doc.supplier = normalize_text(doc.supplier)
@@ -82,6 +83,7 @@ def validate_outsource_receipt(doc) -> None:
     doc.color = normalize_text(doc.color)
     doc.color_name = normalize_text(doc.color_name)
     doc.color_code = normalize_text(doc.color_code).upper()
+    doc.exception_summary = normalize_text(getattr(doc, "exception_summary", None))
     doc.qc_stock_entry = normalize_text(doc.qc_stock_entry)
     doc.final_stock_entry = normalize_text(doc.final_stock_entry)
     doc.qc_completed_at = _normalize_datetime(doc.qc_completed_at)
@@ -91,6 +93,7 @@ def validate_outsource_receipt(doc) -> None:
     _sync_location_context(doc)
     _validate_links(doc)
     _normalize_items(doc)
+    _sync_exception_summary(doc)
     _normalize_logs(doc)
     _append_system_logs(doc)
 
@@ -287,38 +290,22 @@ def _validate_links(doc) -> None:
     if not doc.outsource_order:
         frappe.throw(_("关联外包单不能为空。"))
 
-    ensure_link_exists("Outsource Order", doc.outsource_order)
-    ensure_link_exists("Supplier", doc.supplier)
-    ensure_link_exists("Company", doc.company)
-    ensure_link_exists("Warehouse", doc.warehouse)
-    ensure_enabled_link("Warehouse Location", doc.warehouse_location)
-    ensure_link_exists("Style", doc.style)
-    ensure_link_exists("Item", doc.item_template)
-    ensure_link_exists("Craft Sheet", doc.craft_sheet)
-    ensure_link_exists("Sample Ticket", doc.sample_ticket)
-    ensure_enabled_link("Color", doc.color)
-    ensure_link_exists("Stock Entry", doc.qc_stock_entry)
-    ensure_link_exists("Stock Entry", doc.final_stock_entry)
+    _ensure_cached_link_exists(doc, "Outsource Order", doc.outsource_order)
+    _ensure_cached_link_exists(doc, "Supplier", doc.supplier)
+    _ensure_cached_link_exists(doc, "Company", doc.company)
+    _ensure_cached_link_exists(doc, "Warehouse", doc.warehouse)
+    _ensure_cached_enabled_link(doc, "Warehouse Location", doc.warehouse_location)
+    _ensure_cached_link_exists(doc, "Style", doc.style)
+    _ensure_cached_link_exists(doc, "Item", doc.item_template)
+    _ensure_cached_link_exists(doc, "Craft Sheet", doc.craft_sheet)
+    _ensure_cached_link_exists(doc, "Sample Ticket", doc.sample_ticket)
+    _ensure_cached_enabled_link(doc, "Color", doc.color)
+    _ensure_cached_link_exists(doc, "Stock Entry", doc.qc_stock_entry)
+    _ensure_cached_link_exists(doc, "Stock Entry", doc.final_stock_entry)
 
 
 def _sync_from_order(doc) -> None:
-    order_row = frappe.db.get_value(
-        "Outsource Order",
-        doc.outsource_order,
-        [
-            "supplier",
-            "style",
-            "style_name",
-            "item_template",
-            "craft_sheet",
-            "sample_ticket",
-            "color",
-            "color_name",
-            "color_code",
-            "receipt_warehouse",
-        ],
-        as_dict=True,
-    ) or {}
+    order_row = _get_cached_outsource_order_row(doc)
 
     if order_row.get("supplier"):
         doc.supplier = normalize_text(order_row.get("supplier"))
@@ -346,9 +333,7 @@ def _sync_location_context(doc) -> None:
     if not doc.warehouse_location:
         return
 
-    location_warehouse = normalize_text(
-        frappe.db.get_value("Warehouse Location", doc.warehouse_location, "warehouse")
-    )
+    location_warehouse = _get_cached_location_warehouse(doc, doc.warehouse_location)
     if location_warehouse and not doc.warehouse:
         doc.warehouse = location_warehouse
     elif doc.warehouse and location_warehouse and doc.warehouse != location_warehouse:
@@ -372,23 +357,22 @@ def _normalize_items(doc) -> None:
         row.color_code = normalize_text(getattr(row, "color_code", None)).upper()
         row.size_code = normalize_text(getattr(row, "size_code", None)).upper()
         row.qty = flt(getattr(row, "qty", None) or 0)
+        row.shortage_qty = flt(getattr(row, "shortage_qty", None) or 0)
+        row.wrong_color_qty = flt(getattr(row, "wrong_color_qty", None) or 0)
+        row.wrong_size_qty = flt(getattr(row, "wrong_size_qty", None) or 0)
         row.sellable_qty = flt(getattr(row, "sellable_qty", None) or 0)
         row.repair_qty = flt(getattr(row, "repair_qty", None) or 0)
         row.defective_qty = flt(getattr(row, "defective_qty", None) or 0)
         row.frozen_qty = flt(getattr(row, "frozen_qty", None) or 0)
         row.qc_note = normalize_text(getattr(row, "qc_note", None))
+        row.exception_note = normalize_text(getattr(row, "exception_note", None))
         row.remark = normalize_text(getattr(row, "remark", None))
 
         if not row.item_code:
             frappe.throw(_("到货明细第 {0} 行缺少到货货品。").format(frappe.bold(row.idx)))
-        ensure_link_exists("Item", row.item_code)
+        _ensure_cached_link_exists(doc, "Item", row.item_code)
 
-        item_row = frappe.db.get_value(
-            "Item",
-            row.item_code,
-            ["item_name", "item_usage_type", "style", "color_code", "size_code"],
-            as_dict=True,
-        ) or {}
+        item_row = _get_cached_outsource_receipt_item_values(doc, row.item_code)
         item_usage_type = normalize_select(
             item_row.get("item_usage_type"),
             "物料用途",
@@ -404,15 +388,16 @@ def _normalize_items(doc) -> None:
         row.color_code = normalize_text(item_row.get("color_code") or row.color_code).upper()
         row.size_code = normalize_text(item_row.get("size_code") or row.size_code).upper()
 
-        ensure_link_exists("Style", row.style)
+        _ensure_cached_link_exists(doc, "Style", row.style)
         if doc.style and row.style != doc.style:
             frappe.throw(_("到货明细第 {0} 行的货品不属于当前外包单款号。").format(frappe.bold(row.idx)))
-        if doc.color_code and row.color_code and row.color_code != doc.color_code:
+        if doc.color_code and row.color_code and row.color_code != doc.color_code and flt(row.wrong_color_qty) <= 0:
             frappe.throw(_("到货明细第 {0} 行的颜色编码与外包单不一致。").format(frappe.bold(row.idx)))
-        if row.qty <= 0:
-            frappe.throw(_("到货明细第 {0} 行的到货数量必须大于 0。").format(frappe.bold(row.idx)))
 
         for fieldname, label in (
+            ("shortage_qty", "短装数量"),
+            ("wrong_color_qty", "错色数量"),
+            ("wrong_size_qty", "错码数量"),
             ("sellable_qty", "可售数量"),
             ("repair_qty", "返修数量"),
             ("defective_qty", "次品数量"),
@@ -422,9 +407,76 @@ def _normalize_items(doc) -> None:
             if value < 0:
                 frappe.throw(_("到货明细第 {0} 行的{1}不能小于 0。").format(frappe.bold(row.idx), label))
 
+        if row.qty <= 0 and row.shortage_qty <= 0:
+            frappe.throw(_("到货明细第 {0} 行的到货数量必须大于 0，或至少记录短装数量。").format(frappe.bold(row.idx)))
+        if row.qty <= 0 and any(
+            flt(value) > 0
+            for value in (
+                row.wrong_color_qty,
+                row.wrong_size_qty,
+                row.sellable_qty,
+                row.repair_qty,
+                row.defective_qty,
+                row.frozen_qty,
+            )
+        ):
+            frappe.throw(_("到货明细第 {0} 行没有实际到货时，只允许记录短装数量。").format(frappe.bold(row.idx)))
+        if row.wrong_color_qty > row.qty:
+            frappe.throw(_("到货明细第 {0} 行的错色数量不能大于到货数量。").format(frappe.bold(row.idx)))
+        if row.wrong_size_qty > row.qty:
+            frappe.throw(_("到货明细第 {0} 行的错码数量不能大于到货数量。").format(frappe.bold(row.idx)))
+        if (row.wrong_color_qty + row.wrong_size_qty) > row.qty:
+            frappe.throw(_("到货明细第 {0} 行的错色数量与错码数量之和不能大于到货数量。").format(frappe.bold(row.idx)))
+        if doc.color_code and row.color_code and row.color_code != doc.color_code and row.wrong_color_qty != row.qty:
+            frappe.throw(_("到货明细第 {0} 行记录错色时，错色数量必须等于到货数量。").format(frappe.bold(row.idx)))
+
         result_qty = round(row.sellable_qty + row.repair_qty + row.defective_qty + row.frozen_qty, 2)
         if result_qty > round(row.qty, 2):
             frappe.throw(_("到货明细第 {0} 行的质检分配数量不能大于到货数量。").format(frappe.bold(row.idx)))
+
+
+def _sync_exception_summary(doc) -> None:
+    totals = {
+        "exception_row_count": 0,
+        "total_shortage_qty": 0.0,
+        "total_wrong_color_qty": 0.0,
+        "total_wrong_size_qty": 0.0,
+        "total_defective_qty": 0.0,
+    }
+
+    for row in doc.items or []:
+        shortage_qty = round(flt(getattr(row, "shortage_qty", 0) or 0), 2)
+        wrong_color_qty = round(flt(getattr(row, "wrong_color_qty", 0) or 0), 2)
+        wrong_size_qty = round(flt(getattr(row, "wrong_size_qty", 0) or 0), 2)
+        defective_qty = round(flt(getattr(row, "defective_qty", 0) or 0), 2)
+
+        totals["total_shortage_qty"] = round(totals["total_shortage_qty"] + shortage_qty, 2)
+        totals["total_wrong_color_qty"] = round(totals["total_wrong_color_qty"] + wrong_color_qty, 2)
+        totals["total_wrong_size_qty"] = round(totals["total_wrong_size_qty"] + wrong_size_qty, 2)
+        totals["total_defective_qty"] = round(totals["total_defective_qty"] + defective_qty, 2)
+
+        if any(value > 0 for value in (shortage_qty, wrong_color_qty, wrong_size_qty, defective_qty)):
+            totals["exception_row_count"] += 1
+
+    doc.exception_row_count = totals["exception_row_count"]
+    doc.total_shortage_qty = totals["total_shortage_qty"]
+    doc.total_wrong_color_qty = totals["total_wrong_color_qty"]
+    doc.total_wrong_size_qty = totals["total_wrong_size_qty"]
+    doc.total_defective_qty = totals["total_defective_qty"]
+    doc.exception_summary = _build_exception_summary(totals)
+
+
+def _build_exception_summary(totals: dict[str, float | int]) -> str:
+    parts = []
+    if flt(totals.get("total_shortage_qty")) > 0:
+        parts.append(_("短装 {0}").format(totals["total_shortage_qty"]))
+    if flt(totals.get("total_wrong_color_qty")) > 0:
+        parts.append(_("错色 {0}").format(totals["total_wrong_color_qty"]))
+    if flt(totals.get("total_wrong_size_qty")) > 0:
+        parts.append(_("错码 {0}").format(totals["total_wrong_size_qty"]))
+    if flt(totals.get("total_defective_qty")) > 0:
+        parts.append(_("次品 {0}").format(totals["total_defective_qty"]))
+    return "；".join(parts)
 
 
 def _normalize_logs(doc) -> None:
@@ -447,7 +499,7 @@ def _normalize_logs(doc) -> None:
         )
         row.operator = normalize_text(getattr(row, "operator", None)) or frappe.session.user
         row.note = normalize_text(getattr(row, "note", None))
-        ensure_link_exists("User", row.operator)
+        _ensure_cached_link_exists(doc, "User", row.operator)
 
 
 def _append_system_logs(doc) -> None:
@@ -479,6 +531,8 @@ def _append_system_logs(doc) -> None:
 def _build_qc_stock_entry_items(doc) -> list[dict[str, object]]:
     items: list[dict[str, object]] = []
     for row in doc.items or []:
+        if flt(row.qty or 0) <= 0:
+            continue
         validate_inventory_status_transition("", "QC_PENDING", row_label=f"到货明细第 {row.idx} 行")
         payload = _build_stock_entry_row_payload(
             doc,
@@ -498,6 +552,8 @@ def _build_final_stock_entry_items(doc) -> list[dict[str, object]]:
 
     items: list[dict[str, object]] = []
     for row in doc.items or []:
+        if flt(row.qty or 0) <= 0:
+            continue
         for target_status, qty in (
             ("SELLABLE", flt(row.sellable_qty or 0)),
             ("REPAIR", flt(row.repair_qty or 0)),
@@ -532,7 +588,7 @@ def _build_stock_entry_row_payload(
     inventory_status_from: str,
     inventory_status_to: str,
 ) -> dict[str, object]:
-    item_row = _get_item_basic_data(row.item_code)
+    item_row = _get_cached_item_basic_data(doc, row.item_code)
     return _filter_doc_payload(
         "Stock Entry Detail",
         {
@@ -559,6 +615,8 @@ def _build_stock_entry_row_payload(
 
 def _validate_qc_result_completion(doc) -> None:
     for row in doc.items or []:
+        if round(flt(row.qty or 0), 2) <= 0:
+            continue
         allocated_qty = round(
             flt(row.sellable_qty or 0)
             + flt(row.repair_qty or 0)
@@ -588,6 +646,131 @@ def _get_item_basic_data(item_code: str) -> dict[str, object]:
     ) or {}
 
 
+def _reset_outsource_receipt_validation_cache(doc) -> None:
+    cache = {
+        "link_exists": {},
+        "enabled_links": {},
+        "outsource_order_row": None,
+        "location_warehouses": {},
+        "item_values": {},
+        "item_basic_data": {},
+    }
+    flags = getattr(doc, "flags", None)
+    if flags is not None:
+        flags.outsource_receipt_validation_cache = cache
+        return
+    doc._outsource_receipt_validation_cache = cache
+
+
+def _get_outsource_receipt_validation_cache(doc) -> dict[str, object]:
+    flags = getattr(doc, "flags", None)
+    if flags is not None:
+        cache = getattr(flags, "outsource_receipt_validation_cache", None)
+        if isinstance(cache, dict):
+            return cache
+    else:
+        cache = getattr(doc, "_outsource_receipt_validation_cache", None)
+        if isinstance(cache, dict):
+            return cache
+
+    _reset_outsource_receipt_validation_cache(doc)
+    return _get_outsource_receipt_validation_cache(doc)
+
+
+def _ensure_cached_link_exists(doc, doctype: str, name: str | None) -> None:
+    normalized_name = normalize_text(name)
+    if not normalized_name:
+        return
+
+    cache = _get_outsource_receipt_validation_cache(doc)["link_exists"]
+    cache_key = (doctype, normalized_name)
+    if cache.get(cache_key):
+        return
+
+    ensure_link_exists(doctype, normalized_name)
+    cache[cache_key] = True
+
+
+def _ensure_cached_enabled_link(doc, doctype: str, name: str | None, enabled_field: str = "enabled") -> None:
+    normalized_name = normalize_text(name)
+    if not normalized_name:
+        return
+
+    cache = _get_outsource_receipt_validation_cache(doc)["enabled_links"]
+    cache_key = (doctype, normalized_name, enabled_field)
+    if cache.get(cache_key):
+        return
+
+    ensure_enabled_link(doctype, normalized_name, enabled_field)
+    cache[cache_key] = True
+
+
+def _get_cached_outsource_order_row(doc) -> dict[str, object]:
+    cache = _get_outsource_receipt_validation_cache(doc)
+    row = cache.get("outsource_order_row")
+    if isinstance(row, dict):
+        return row
+
+    cache["outsource_order_row"] = frappe.db.get_value(
+        "Outsource Order",
+        normalize_text(getattr(doc, "outsource_order", None)),
+        [
+            "supplier",
+            "style",
+            "style_name",
+            "item_template",
+            "craft_sheet",
+            "sample_ticket",
+            "color",
+            "color_name",
+            "color_code",
+            "receipt_warehouse",
+        ],
+        as_dict=True,
+    ) or {}
+    return cache["outsource_order_row"]
+
+
+def _get_cached_location_warehouse(doc, location_name: str | None) -> str:
+    normalized_location = normalize_text(location_name)
+    if not normalized_location:
+        return ""
+
+    cache = _get_outsource_receipt_validation_cache(doc)["location_warehouses"]
+    if normalized_location not in cache:
+        cache[normalized_location] = normalize_text(
+            frappe.db.get_value("Warehouse Location", normalized_location, "warehouse")
+        )
+    return cache[normalized_location]
+
+
+def _get_cached_outsource_receipt_item_values(doc, item_code: str) -> dict[str, object]:
+    normalized_item_code = normalize_text(item_code)
+    if not normalized_item_code:
+        return {}
+
+    cache = _get_outsource_receipt_validation_cache(doc)["item_values"]
+    if normalized_item_code not in cache:
+        cache[normalized_item_code] = frappe.db.get_value(
+            "Item",
+            normalized_item_code,
+            ["item_name", "item_usage_type", "style", "color_code", "size_code"],
+            as_dict=True,
+        ) or {}
+    return cache[normalized_item_code]
+
+
+def _get_cached_item_basic_data(doc, item_code: str) -> dict[str, object]:
+    normalized_item_code = normalize_text(item_code)
+    if not normalized_item_code:
+        return {}
+
+    cache = _get_outsource_receipt_validation_cache(doc)["item_basic_data"]
+    if normalized_item_code not in cache:
+        cache[normalized_item_code] = _get_item_basic_data(normalized_item_code)
+    return cache[normalized_item_code]
+
+
 def _save_receipt_action(doc, message: str) -> dict[str, object]:
     doc.flags.skip_outsource_receipt_system_log = True
     try:
@@ -604,10 +787,16 @@ def _build_receipt_response(doc, message: str) -> dict[str, object]:
         "name": doc.name,
         "receipt_no": doc.receipt_no or doc.name,
         "receipt_status": doc.receipt_status,
-        "total_received_qty": float(doc.total_received_qty or 0),
-        "qc_stock_entry": doc.qc_stock_entry,
-        "final_stock_entry": doc.final_stock_entry,
-        "qc_completed_at": str(doc.qc_completed_at) if doc.qc_completed_at else None,
+        "total_received_qty": float(getattr(doc, "total_received_qty", 0) or 0),
+        "exception_row_count": int(getattr(doc, "exception_row_count", 0) or 0),
+        "total_shortage_qty": float(getattr(doc, "total_shortage_qty", 0) or 0),
+        "total_wrong_color_qty": float(getattr(doc, "total_wrong_color_qty", 0) or 0),
+        "total_wrong_size_qty": float(getattr(doc, "total_wrong_size_qty", 0) or 0),
+        "total_defective_qty": float(getattr(doc, "total_defective_qty", 0) or 0),
+        "exception_summary": getattr(doc, "exception_summary", "") or "",
+        "qc_stock_entry": getattr(doc, "qc_stock_entry", ""),
+        "final_stock_entry": getattr(doc, "final_stock_entry", ""),
+        "qc_completed_at": str(getattr(doc, "qc_completed_at", None)) if getattr(doc, "qc_completed_at", None) else None,
         "message": message,
     }
 

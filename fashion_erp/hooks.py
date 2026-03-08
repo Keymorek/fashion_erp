@@ -14,6 +14,14 @@ doc_events = {
     "BOM": {
         "on_update": "fashion_erp.garment_mfg.events.bom.sync_production_ticket",
     },
+    "After Sales Ticket": {
+        "on_update": "fashion_erp.stock.events.after_sales_ticket.sync_linked_sales_orders_after_sales_status",
+    },
+    "Delivery Note": {
+        "validate": "fashion_erp.stock.events.delivery_note.validate_delivery_note_extensions",
+        "on_submit": "fashion_erp.stock.events.delivery_note.sync_delivery_note_links",
+        "on_cancel": "fashion_erp.stock.events.delivery_note.sync_delivery_note_links",
+    },
     "Item": {
         "validate": "fashion_erp.stock.events.item.validate_supply_metadata",
     },
@@ -24,6 +32,7 @@ doc_events = {
         "validate": "fashion_erp.stock.events.purchase_receipt.validate_supply_receipt",
     },
     "Sales Order": {
+        "validate": "fashion_erp.stock.events.sales_order.validate_sales_order_channel_context",
         "on_update": "fashion_erp.stock.events.sales_order.sync_after_sales_replacement_order",
     },
     "Stock Entry": {

@@ -111,6 +111,7 @@ def autoname_after_sales_ticket(doc) -> None:
 
 
 def validate_after_sales_ticket(doc) -> None:
+    _reset_after_sales_validation_cache(doc)
     doc.ticket_no = normalize_text(doc.ticket_no)
     doc.ticket_type = normalize_select(
         doc.ticket_type,
@@ -512,33 +513,22 @@ def _validate_links(doc) -> None:
 
 def _sync_from_sales_order(doc) -> None:
     if doc.sales_order:
-        sales_order = frappe.db.get_value(
-            "Sales Order",
-            doc.sales_order,
-            ["customer", "customer_name", "channel", "channel_store", "external_order_id"],
-            as_dict=True,
-        )
+        sales_order = _get_cached_sales_order_header(doc, doc.sales_order)
         if sales_order:
-            doc.customer = normalize_text(sales_order.customer)
-            doc.buyer_name = normalize_text(doc.buyer_name or sales_order.customer_name)
-            doc.channel = normalize_text(sales_order.channel)
-            doc.channel_store = normalize_text(sales_order.channel_store)
-            doc.external_order_id = normalize_text(sales_order.external_order_id)
+            doc.customer = normalize_text(sales_order.get("customer"))
+            doc.buyer_name = normalize_text(doc.buyer_name or sales_order.get("customer_name"))
+            doc.channel = normalize_text(sales_order.get("channel"))
+            doc.channel_store = normalize_text(sales_order.get("channel_store"))
+            doc.external_order_id = normalize_text(sales_order.get("external_order_id"))
 
     if not doc.customer and doc.sales_invoice:
-        doc.customer = normalize_text(
-            frappe.db.get_value("Sales Invoice", doc.sales_invoice, "customer")
-        )
+        doc.customer = _get_cached_sales_invoice_customer(doc, doc.sales_invoice)
 
     if not doc.customer and doc.delivery_note:
-        doc.customer = normalize_text(
-            frappe.db.get_value("Delivery Note", doc.delivery_note, "customer")
-        )
+        doc.customer = _get_cached_delivery_note_customer(doc, doc.delivery_note)
 
     if doc.channel_store:
-        store_channel = normalize_text(
-            frappe.db.get_value("Channel Store", doc.channel_store, "channel")
-        )
+        store_channel = _get_cached_channel_store_channel(doc, doc.channel_store)
         if store_channel:
             doc.channel = store_channel
 
@@ -547,9 +537,7 @@ def _sync_location_context(doc) -> None:
     if not doc.warehouse_location:
         return
 
-    location_warehouse = normalize_text(
-        frappe.db.get_value("Warehouse Location", doc.warehouse_location, "warehouse")
-    )
+    location_warehouse = _get_cached_warehouse_location(doc, doc.warehouse_location)
     if location_warehouse and not doc.warehouse:
         doc.warehouse = location_warehouse
     elif doc.warehouse and location_warehouse and doc.warehouse != location_warehouse:
@@ -583,12 +571,7 @@ def _sync_item_links(doc, row) -> None:
     row.delivery_note_item_ref = normalize_text(getattr(row, "delivery_note_item_ref", None))
 
     if row.sales_order_item_ref:
-        sales_order_item = frappe.db.get_value(
-            "Sales Order Item",
-            row.sales_order_item_ref,
-            ["parent", "item_code", "style", "color_code", "size_code"],
-            as_dict=True,
-        )
+        sales_order_item = _get_cached_sales_order_item(doc, row.sales_order_item_ref)
         if not sales_order_item:
             frappe.throw(
                 _("销售订单明细 {0} 不存在。").format(
@@ -614,12 +597,7 @@ def _sync_item_links(doc, row) -> None:
         )
 
     if row.delivery_note_item_ref:
-        delivery_note_item = frappe.db.get_value(
-            "Delivery Note Item",
-            row.delivery_note_item_ref,
-            ["parent", "item_code", "against_sales_order"],
-            as_dict=True,
-        )
+        delivery_note_item = _get_cached_delivery_note_item(doc, row.delivery_note_item_ref)
         if not delivery_note_item:
             frappe.throw(
                 _("发货单明细 {0} 不存在。").format(
@@ -645,12 +623,7 @@ def _normalize_item_row(doc, row) -> None:
         frappe.throw(_("售后明细第 {0} 行的物料编码不能为空。").format(row.idx))
     ensure_link_exists("Item", row.item_code)
 
-    item_meta = frappe.db.get_value(
-        "Item",
-        row.item_code,
-        ["style", "color_code", "size_code"],
-        as_dict=True,
-    ) or {}
+    item_meta = _get_cached_item_meta(doc, row.item_code)
     row.style = normalize_text(getattr(row, "style", None) or item_meta.get("style"))
     row.color_code = normalize_text(
         getattr(row, "color_code", None) or item_meta.get("color_code")
@@ -714,13 +687,7 @@ def _normalize_item_row(doc, row) -> None:
     ensure_enabled_link("Return Reason", row.return_reason)
     if row.return_disposition:
         ensure_enabled_link("Return Disposition", row.return_disposition)
-        target_status = normalize_text(
-            frappe.db.get_value(
-                "Return Disposition",
-                row.return_disposition,
-                "target_inventory_status",
-            )
-        ).upper()
+        target_status = _get_cached_return_disposition_target_status(doc, row.return_disposition)
         if not row.inventory_status_to:
             row.inventory_status_to = target_status
         elif row.inventory_status_to != target_status:
@@ -899,12 +866,7 @@ def _build_replacement_sales_order_items(
 
         source_row = None
         if row.sales_order_item_ref:
-            source_row = frappe.db.get_value(
-                "Sales Order Item",
-                row.sales_order_item_ref,
-                ["rate", "uom", "warehouse", "delivery_date"],
-                as_dict=True,
-            )
+            source_row = _get_cached_sales_order_item(doc, row.sales_order_item_ref)
 
         item_payload = {
             "doctype": "Sales Order Item",
@@ -1118,7 +1080,7 @@ def _build_after_sales_stock_entry_payload(
     entry_mode: str,
     items: list[dict[str, object]],
 ) -> dict[str, object]:
-    stock_entry_type = purpose if frappe.db.exists("Stock Entry Type", purpose) else None
+    stock_entry_type = _get_cached_after_sales_stock_entry_type(doc, purpose)
     mode_label = "最终处理" if entry_mode == "最终处理" else "待检入库"
     payload = {
         "doctype": "Stock Entry",
@@ -1135,25 +1097,17 @@ def _build_after_sales_stock_entry_payload(
 
 
 def _get_after_sales_company(doc) -> str | None:
-    if doc.sales_order and frappe.db.exists("Sales Order", doc.sales_order):
-        company = frappe.db.get_value("Sales Order", doc.sales_order, "company")
+    if doc.sales_order:
+        company = normalize_text(_get_cached_sales_order_header(doc, doc.sales_order).get("company"))
         if company:
             return company
 
-    defaults = [
-        frappe.defaults.get_user_default("Company"),
-        frappe.defaults.get_global_default("company"),
-        frappe.defaults.get_global_default("Company"),
-    ]
-    for company in defaults:
-        if company and frappe.db.exists("Company", company):
-            return company
-    return None
+    return _get_cached_after_sales_default_company(doc) or None
 
 
 def _get_after_sales_delivery_date(doc) -> str:
-    if doc.sales_order and frappe.db.exists("Sales Order", doc.sales_order):
-        delivery_date = frappe.db.get_value("Sales Order", doc.sales_order, "delivery_date")
+    if doc.sales_order:
+        delivery_date = _get_cached_sales_order_header(doc, doc.sales_order).get("delivery_date")
         if delivery_date:
             return str(getdate(delivery_date))
     return nowdate()
@@ -1204,6 +1158,208 @@ def _append_log(
 
 def _has_action_log(doc, action_type: str) -> bool:
     return any(normalize_text(row.action_type) == action_type for row in (doc.logs or []))
+
+
+def _reset_after_sales_validation_cache(doc) -> None:
+    cache = {
+        "sales_order_items": {},
+        "delivery_note_items": {},
+        "item_meta": {},
+        "return_disposition_targets": {},
+        "sales_orders": {},
+        "sales_invoice_customers": {},
+        "delivery_note_customers": {},
+        "channel_store_channels": {},
+        "warehouse_locations": {},
+        "default_company": "",
+        "default_company_loaded": False,
+        "stock_entry_types": {},
+    }
+    flags = getattr(doc, "flags", None)
+    if flags is not None:
+        flags.after_sales_validation_cache = cache
+        return
+    doc._after_sales_validation_cache = cache
+
+
+def _get_after_sales_validation_cache(doc) -> dict[str, dict[str, object]]:
+    flags = getattr(doc, "flags", None)
+    if flags is not None:
+        cache = getattr(flags, "after_sales_validation_cache", None)
+        if isinstance(cache, dict):
+            return cache
+    else:
+        cache = getattr(doc, "_after_sales_validation_cache", None)
+        if isinstance(cache, dict):
+            return cache
+
+    _reset_after_sales_validation_cache(doc)
+    return _get_after_sales_validation_cache(doc)
+
+
+def _get_cached_sales_order_item(doc, sales_order_item_ref: str):
+    cache = _get_after_sales_validation_cache(doc)["sales_order_items"]
+    if sales_order_item_ref not in cache:
+        cache[sales_order_item_ref] = frappe.db.get_value(
+            "Sales Order Item",
+            sales_order_item_ref,
+            [
+                "parent",
+                "item_code",
+                "style",
+                "color_code",
+                "size_code",
+                "rate",
+                "uom",
+                "warehouse",
+                "delivery_date",
+            ],
+            as_dict=True,
+        )
+    return cache[sales_order_item_ref]
+
+
+def _get_cached_delivery_note_item(doc, delivery_note_item_ref: str):
+    cache = _get_after_sales_validation_cache(doc)["delivery_note_items"]
+    if delivery_note_item_ref not in cache:
+        cache[delivery_note_item_ref] = frappe.db.get_value(
+            "Delivery Note Item",
+            delivery_note_item_ref,
+            ["parent", "item_code", "against_sales_order"],
+            as_dict=True,
+        )
+    return cache[delivery_note_item_ref]
+
+
+def _get_cached_item_meta(doc, item_code: str):
+    cache = _get_after_sales_validation_cache(doc)["item_meta"]
+    if item_code not in cache:
+        cache[item_code] = frappe.db.get_value(
+            "Item",
+            item_code,
+            ["style", "color_code", "size_code"],
+            as_dict=True,
+        ) or {}
+    return cache[item_code]
+
+
+def _get_cached_return_disposition_target_status(doc, return_disposition: str) -> str:
+    cache = _get_after_sales_validation_cache(doc)["return_disposition_targets"]
+    if return_disposition not in cache:
+        cache[return_disposition] = normalize_text(
+            frappe.db.get_value(
+                "Return Disposition",
+                return_disposition,
+                "target_inventory_status",
+            )
+        ).upper()
+    return cache[return_disposition]
+
+
+def _get_cached_after_sales_default_company(doc) -> str:
+    cache = _get_after_sales_validation_cache(doc)
+    if cache.get("default_company_loaded"):
+        return normalize_text(cache.get("default_company"))
+
+    defaults = [
+        frappe.defaults.get_user_default("Company"),
+        frappe.defaults.get_global_default("company"),
+        frappe.defaults.get_global_default("Company"),
+    ]
+    company = ""
+    for candidate in defaults:
+        normalized_company = normalize_text(candidate)
+        if normalized_company and frappe.db.exists("Company", normalized_company):
+            company = normalized_company
+            break
+
+    cache["default_company"] = company
+    cache["default_company_loaded"] = True
+    return company
+
+
+def _get_cached_after_sales_stock_entry_type(doc, purpose: str) -> str | None:
+    normalized_purpose = normalize_text(purpose)
+    if not normalized_purpose:
+        return None
+
+    cache = _get_after_sales_validation_cache(doc)["stock_entry_types"]
+    if normalized_purpose not in cache:
+        cache[normalized_purpose] = (
+            normalized_purpose if frappe.db.exists("Stock Entry Type", normalized_purpose) else None
+        )
+    return cache[normalized_purpose]
+
+
+def _get_cached_sales_order_header(doc, sales_order_name: str):
+    cache = _get_after_sales_validation_cache(doc)["sales_orders"]
+    normalized_name = normalize_text(sales_order_name)
+    if not normalized_name:
+        return {}
+    if normalized_name not in cache:
+        cache[normalized_name] = frappe.db.get_value(
+            "Sales Order",
+            normalized_name,
+            [
+                "customer",
+                "customer_name",
+                "channel",
+                "channel_store",
+                "external_order_id",
+                "company",
+                "delivery_date",
+            ],
+            as_dict=True,
+        ) or {}
+    return cache[normalized_name]
+
+
+def _get_cached_sales_invoice_customer(doc, sales_invoice_name: str) -> str:
+    cache = _get_after_sales_validation_cache(doc)["sales_invoice_customers"]
+    normalized_name = normalize_text(sales_invoice_name)
+    if not normalized_name:
+        return ""
+    if normalized_name not in cache:
+        cache[normalized_name] = normalize_text(
+            frappe.db.get_value("Sales Invoice", normalized_name, "customer")
+        )
+    return cache[normalized_name]
+
+
+def _get_cached_delivery_note_customer(doc, delivery_note_name: str) -> str:
+    cache = _get_after_sales_validation_cache(doc)["delivery_note_customers"]
+    normalized_name = normalize_text(delivery_note_name)
+    if not normalized_name:
+        return ""
+    if normalized_name not in cache:
+        cache[normalized_name] = normalize_text(
+            frappe.db.get_value("Delivery Note", normalized_name, "customer")
+        )
+    return cache[normalized_name]
+
+
+def _get_cached_channel_store_channel(doc, channel_store_name: str) -> str:
+    cache = _get_after_sales_validation_cache(doc)["channel_store_channels"]
+    normalized_name = normalize_text(channel_store_name)
+    if not normalized_name:
+        return ""
+    if normalized_name not in cache:
+        cache[normalized_name] = normalize_text(
+            frappe.db.get_value("Channel Store", normalized_name, "channel")
+        )
+    return cache[normalized_name]
+
+
+def _get_cached_warehouse_location(doc, warehouse_location_name: str) -> str:
+    cache = _get_after_sales_validation_cache(doc)["warehouse_locations"]
+    normalized_name = normalize_text(warehouse_location_name)
+    if not normalized_name:
+        return ""
+    if normalized_name not in cache:
+        cache[normalized_name] = normalize_text(
+            frappe.db.get_value("Warehouse Location", normalized_name, "warehouse")
+        )
+    return cache[normalized_name]
 
 
 def _normalize_datetime(value, *, use_now: bool = False):

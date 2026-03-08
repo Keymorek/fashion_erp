@@ -19,14 +19,14 @@ def _get_style(style_name: str):
 def create_template_item(style_name: str) -> dict[str, object]:
     style = _get_style(style_name)
     if style.item_template:
-        result = create_template_item_for_style(style_name)
+        result = create_template_item_for_style(style_name, style_doc=style)
         return {
             "ok": True,
             "message": _("模板货品已关联：{0}。").format(frappe.bold(result["item_code"])),
             "result": result,
         }
 
-    result = create_template_item_for_style(style_name)
+    result = create_template_item_for_style(style_name, style_doc=style)
     return {
         "ok": True,
         "message": _("模板货品已准备完成：{0}。").format(frappe.bold(result["item_code"])),
@@ -45,7 +45,7 @@ def generate_variants(style_name: str) -> dict[str, object]:
             "issues": issues,
         }
 
-    result = generate_variants_for_style(style_name)
+    result = generate_variants_for_style(style_name, style_doc=style)
     return {
         "ok": True,
         "message": _("单品编码生成完成。新增：{0}，更新：{1}，未变更：{2}。").format(
@@ -69,5 +69,5 @@ def get_style_matrix(style_name: str) -> dict[str, object]:
 
     return {
         "ok": True,
-        "result": build_style_matrix(style_name),
+        "result": build_style_matrix(style_name, style_doc=style),
     }

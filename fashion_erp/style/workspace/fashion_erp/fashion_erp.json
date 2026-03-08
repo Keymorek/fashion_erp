@@ -324,6 +324,17 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "订单同步批次",
+   "link_count": 0,
+   "link_to": "Order Sync Batch",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
  "module": "Style",

@@ -12,11 +12,15 @@
   "color_code",
   "size_code",
   "qty",
+  "shortage_qty",
+  "wrong_color_qty",
+  "wrong_size_qty",
   "sellable_qty",
   "repair_qty",
   "defective_qty",
   "frozen_qty",
   "qc_note",
+  "exception_note",
   "remark"
  ],
  "fields": [
@@ -67,6 +71,24 @@
   },
   {
    "default": "0",
+   "fieldname": "shortage_qty",
+   "fieldtype": "Float",
+   "label": "短装数量"
+  },
+  {
+   "default": "0",
+   "fieldname": "wrong_color_qty",
+   "fieldtype": "Float",
+   "label": "错色数量"
+  },
+  {
+   "default": "0",
+   "fieldname": "wrong_size_qty",
+   "fieldtype": "Float",
+   "label": "错码数量"
+  },
+  {
+   "default": "0",
    "fieldname": "sellable_qty",
    "fieldtype": "Float",
    "label": "可售数量"
@@ -93,6 +115,11 @@
    "fieldname": "qc_note",
    "fieldtype": "Small Text",
    "label": "质检说明"
+  },
+  {
+   "fieldname": "exception_note",
+   "fieldtype": "Small Text",
+   "label": "异常说明"
   },
   {
    "fieldname": "remark",
